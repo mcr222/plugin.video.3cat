@@ -13,6 +13,7 @@ import urllib.parse
 class UI(object):
 
     def __init__(self, base_url, addon_handle, args):
+        xbmc.log("plugin.video.3cat classe UI - start init() ")
         addon = xbmcaddon.Addon()
         addon_path = xbmcvfs.translatePath(addon.getAddonInfo('path'))
         self.tv3 = TV3cat(addon_path, addon)
@@ -22,7 +23,7 @@ class UI(object):
         self.mode = args.get('mode', None)
         self.url = args.get('url', [''])
         self.name = args.get('name', None)
-        xbmc.log("plugin.video.3cat classe UI - init() ")
+        xbmc.log("plugin.video.3cat classe UI - finish init()")
 
 
     def run(self, mode, url):
