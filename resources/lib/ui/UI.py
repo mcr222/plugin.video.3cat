@@ -22,30 +22,30 @@ class UI(object):
         self.mode = args.get('mode', None)
         self.url = args.get('url', [''])
         self.name = args.get('name', None)
-        xbmc.log("plugin.video.tv3.cat classe UI - init() ")
+        xbmc.log("plugin.video.3cat classe UI - init() ")
 
 
     def run(self, mode, url):
-        xbmc.log("plugin.video.tv3.cat classe UI - run()  mode = " + str(mode))
+        xbmc.log("plugin.video.3cat classe UI - run()  mode = " + str(mode))
 
 
         if mode == None:
-            xbmc.log("plugin.video.tv3.cat classe UI - mode = None")
+            xbmc.log("plugin.video.3cat classe UI - mode = None")
             lFolder = self.tv3.listHome()
 
             if len(lFolder) > 0:
                 self.listFolder(lFolder)
             else:
-                xbmc.log("UI.run() Home - No existeixen elements")
+                xbmc.log("plugin.video.3cat - UI.run() Home - No existeixen elements")
 
         elif mode[0] == 'destaquem':
-            xbmc.log("plugin.video.tv3.cat classe UI - mode = destaquem")
+            xbmc.log("plugin.video.3cat classe UI - mode = destaquem")
             lVideos = self.tv3.listDestaquem()
 
             if len(lVideos) > 0:
                 self.listVideos(lVideos)
             else:
-                xbmc.log("UI.run() destaquem - No existeixen videos")
+                xbmc.log("plugin.video.3cat - UI.run() destaquem - No existeixen videos")
 
 
         elif mode[0] == 'noperdis':
@@ -55,7 +55,7 @@ class UI(object):
             if len(lVideos) > 0:
                 self.listVideos(lVideos)
             else:
-                xbmc.log("UI.run() noperdis - No existeixen videos")
+                xbmc.log("plugin.video.3cat - UI.run() noperdis - No existeixen videos")
 
         elif mode[0] == 'mesvist':
 
@@ -64,7 +64,7 @@ class UI(object):
             if len(lVideos) > 0:
                 self.listVideos(lVideos)
             else:
-                xbmc.log("UI.run() mesvist - No existeixen videos")
+                xbmc.log("plugin.video.3cat - UI.run() mesvist - No existeixen videos")
 
         elif mode[0] == 'programes':
 
@@ -73,7 +73,7 @@ class UI(object):
             if len(lFolder) > 0:
                 self.listFolder(lFolder)
             else:
-                xbmc.log("UI.run() programes - No existeixen elements")
+                xbmc.log("plugin.video.3cat - UI.run() programes - No existeixen elements")
 
         elif mode[0] == 'sections':
 
@@ -82,7 +82,7 @@ class UI(object):
             if len(lFolder) > 0:
                 self.listFolder(lFolder)
             else:
-                xbmc.log("UI.run() sections - No existeixen elements")
+                xbmc.log("plugin.video.3cat - UI.run() sections - No existeixen elements")
 
         elif mode[0] == 'dirAZemisio':
 
@@ -91,7 +91,7 @@ class UI(object):
             if len(lFolder) > 0:
                 self.listFolder(lFolder)
             else:
-                xbmc.log("UI.run() dirAZemisio - No existeixen elements")
+                xbmc.log("plugin.video.3cat - UI.run() dirAZemisio - No existeixen elements")
 
         elif mode[0] == 'dirAZtots':
 
@@ -100,7 +100,7 @@ class UI(object):
             if len(lFolder) > 0:
                 self.listFolder(lFolder)
             else:
-                xbmc.log("UI.run() dirAZtots - No existeixen elements")
+                xbmc.log("plugin.video.3cat - UI.run() dirAZtots - No existeixen elements")
 
         elif mode[0] == 'progAZ':
             letters = self.name[0]
@@ -109,7 +109,7 @@ class UI(object):
             if len(lFolder) > 0:
                 self.listFolder(lFolder)
             else:
-                xbmc.log("UI.run() progAZ - No existeixen elements")
+                xbmc.log("plugin.video.3cat - UI.run() progAZ - No existeixen elements")
 
         elif mode[0] == 'directe':
 
@@ -123,7 +123,7 @@ class UI(object):
             if len(lVideos) > 0:
                 self.listVideos(lVideos)
             else:
-                xbmc.log("UI.run() cercar - No s'ha trobat cap video")
+                xbmc.log("plugin.video.3cat - UI.run() cercar - No s'ha trobat cap video")
 
 
         elif mode[0] == 'getlistvideos':
@@ -132,7 +132,7 @@ class UI(object):
             self.listVideos(lVideos)
 
         elif mode[0] == 'coleccions':
-
+            xbmc.log("plugin.video.3cat - Coleccions")
             lFolder = self.tv3.listColeccions()
             self.listFolder(lFolder)
 
@@ -141,7 +141,7 @@ class UI(object):
             self.playVideo(url[0])
 
     def listFolder(self, lFolderVideos):
-        xbmc.log("plugin.video.tv3.cat classe UI - listFolder")
+        xbmc.log("plugin.video.3cat classe UI - listFolder")
         for folder in lFolderVideos:
 
             mode = folder.mode
@@ -161,13 +161,13 @@ class UI(object):
 
     def listVideos(self, lVideos):
 
-        xbmc.log("--------List videos ----------")
+        xbmc.log("-plugin.video.3cat - List videos")
         last = lVideos[1]
         listVideos = lVideos[0]
         if not listVideos:
-            xbmc.log("UI - listVideos - Numero videos: 0")
+            xbmc.log("plugin.video.3cat - UI - listVideos - Numero videos: 0")
         else:
-            xbmc.log("UI - listVideos - Numero videos: " + str(len(listVideos)))
+            xbmc.log("plugin.video.3cat - UI - listVideos - Numero videos: " + str(len(listVideos)))
 
 
 

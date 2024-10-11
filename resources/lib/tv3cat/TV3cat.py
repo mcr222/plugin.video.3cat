@@ -25,17 +25,17 @@ class TV3cat(object):
         self.images = Images(addon_path)
         self.addon_path = addon_path
 
-        xbmc.log("plugin.video.tv3.cat classe TV3cat - init() ")
+        xbmc.log("plugin.video.3cat classe TV3cat - init() ")
 
     # mode = None
     def listHome(self):
-        xbmc.log("plugin.video.tv3.cat classe Tv3cat - listHome() ")
+        xbmc.log("plugin.video.3cat classe Tv3cat - listHome() ")
 
         return Home.getList(self.strs)
 
     # mode = destaquem
     def listDestaquem(self):
-        xbmc.log("plugin.video.tv3.cat classe Tv3cat - listDestaquem() ")
+        xbmc.log("plugin.video.3cat classe Tv3cat - listDestaquem() ")
         html_destacats = getHtml(Urls.url_alacarta)
 
         lVideos = []
@@ -169,39 +169,72 @@ class TV3cat(object):
         result[0] = lVideos
         return result
 
+    def parse_json_structure(self, json_string):
+        try:
+            # Parse the JSON string
+            data = json.loads(json_string)
+            with open('data.json', 'w') as file:
+                json.dump(data, file, indent=4)
+            #print(data)
+            # Extract the required information
+            extracted_data = []
+            #print(data['props']['pageProps']['layout']['structure'][4])
+            programesData = data['props']['pageProps']['layout']['structure'][4]['children'][0]['finalProps']['items']
+            for categoria in programesData:
+                xbmc.log("plugin.video.3cat - Found categoria " + categoria['valor'])
+                for item in categoria['item']:
+                    if 'nombonic' in item and 'id' in item:
+                        entry = {
+                            'titol': item['titol'],
+                            'nombonic': item['nombonic'],
+                            'id': item['id'],
+                            'image': ""
+                        }
 
+                        # Extract image links if available
+                        if 'imatges' in item and isinstance(item['imatges'], list):
+                            for image in item['imatges']:
+                                if 'text' in image and image['text'].startswith('http')\
+                                        and image['rel_name']=="IMG_POSTER":
+                                    entry['image']=image['text']
+
+                        extracted_data.append(entry)
+
+            return extracted_data
+
+        except json.JSONDecodeError:
+            xbmc.log("plugin.video.3cat - cannot read json")
+            return None
 
     # mode = coleccions
     def listColeccions(self):
-        xbmc.log("--------------listColeccions----------")
-
+        xbmc.log("plugin.video.3cat - listColeccions")
         lFolderVideos = []
 
         link = getHtml(Urls.url_coleccions)
 
         if link:
-
             soup = BeautifulSoup(link, "html.parser")
 
             try:
 
-                colecc = soup.findAll("div", {"class": re.compile("M-destacat")})
+                script_tag = soup.find('script', id='__NEXT_DATA__')
+                if script_tag:
+                    xbmc.log("plugin.video.3cat - found script")
 
+                    # Find all items with 'nombonic' and 'id'
+                    # Extract the JSON content from the script tag
+                    json_content = script_tag.string
+                    #print(json_content)
+                    # Extract the data from the JSON content
+                    extracted_data = self.parse_json_structure(json_content)
 
-                for el in colecc:
-
-                    url = el.a["href"]
-                    url = Urls.url_base + url
-                    t = el.div.h2.a.string
-
-                    titol = t.encode("utf-8")
-
-
-                    img = el.figure.img["src"]
-
-
-                    foldVideo = FolderVideo(titol,url, 'getlistvideos', img, img)
-                    lFolderVideos.append(foldVideo)
+                    for el in extracted_data:
+                        xbmc.log("plugin.video.3cat - element " + el)
+                        titol = el['nombonic']
+                        img = el["image"]
+                        foldVideo = FolderVideo(titol, Urls.url_base + titol, 'getlistvideos', img, img)
+                        lFolderVideos.append(foldVideo)
 
             except AttributeError as e:
                 xbmc.log("Exception AtributeError listColeccions: " + str(e))
@@ -249,7 +282,7 @@ class TV3cat(object):
                     for li in ls:
                         url = li.a["href"]
                         t = str(li.a.string)
-                        titol = re.sub('^[\n\r\s]+', '', t)
+                        titol = re.sub(r'^[\n\r\s]+', '', t)
 
                         # test url
                         urlProg = Urls.url_base + url
@@ -264,7 +297,7 @@ class TV3cat(object):
 
 
                         else:
-                            match = re.compile('(http://www.ccma.cat/tv3/alacarta/.+?/fitxa-programa/)(\d+/)').findall(
+                            match = re.compile(r'(http://www.ccma.cat/tv3/alacarta/.+?/fitxa-programa/)(\d+/)').findall(
                                 urlProg)
                             if len(match) != 0:
                                 url1 = match[0][0]
@@ -474,7 +507,7 @@ class TV3cat(object):
 
                                 else:
                                     match = re.compile(
-                                        '(http://www.ccma.cat/tv3/alacarta/.+?/fitxa-programa/)(\d+/)').findall(urlProg)
+                                        r'(http://www.ccma.cat/tv3/alacarta/.+?/fitxa-programa/)(\d+/)').findall(urlProg)
                                     if len(match) != 0:
                                         url1 = match[0][0]
                                         urlcode = match[0][1]
@@ -594,7 +627,7 @@ class TV3cat(object):
                             if actualPage == 1:
                                 url_next = url + nextPage
                             else:
-                                url_next = re.sub('&pagina=[\d]+', nextPage, url)
+                                url_next = re.sub(r'&pagina=[\d]+', nextPage, url)
                         else:
                             url_next = url + '?text=&profile=&items_pagina=15' + nextPage
                             foldNext = FolderVideo(self.strs.get('seguent'), url_next, "getlistvideos", "","")
