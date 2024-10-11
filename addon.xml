@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.tv3.cat" name="TV3cat" version="1.4.9" provider-name="jqandreu">
+<addon id="plugin.video.3cat" name="TV3cat" version="1.0.0" provider-name="mcr222">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
-		<import addon="script.module.beautifulsoup4" version="4.6.3"/>
-        <import addon="script.module.future" version="0.17.1"/>
+		<import addon="script.module.beautifulsoup4"/>
+        <import addon="script.module.future" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="addon.py">
         <provides>video</provides>
@@ -18,7 +18,7 @@
         <description lang="es_ES">Toda la programación de TV3 a la carta.[CR]Las listas de los más vistos, destacados, programas ordenados de la A a la Z. [CR]Canales en directo: TV3cat, K33, Super3, 3/24, Esport3</description>
         <language>ca</language>
         <license>GPL-2.0-or-later</license>
-        <source>https://github.com/jqandreu/plugin.video.tv3.cat</source>
+        <source>https://github.com/jqandreu/plugin.video.3cat</source>
         <website>http://www.tv3.cat</website>
         <assets>
             <icon>resources/icon.png</icon>

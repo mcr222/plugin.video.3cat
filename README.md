@@ -1,9 +1,9 @@
-# plugin.video.tv3.cat
-Kodi addon TV3cat. 
-Entertainment, news, sports, documentaries, etc from catalan television www.tv3.cat
+# plugin.video.3cat.cat
+Kodi addon 3Cat. 
+Entertainment, news, sports, documentaries, etc from catalan television www.3cat.cat/3cat/
 
 Complement per Kodi - XBMC.  
-Tota la programació de TV3 a la carta. Llistes dels programes Més vistos, Destacats, No t'ho perdis, etc.
+Tota la programació de 3Cat. Llistes dels programes Més vistos, Destacats, No t'ho perdis, etc.
 
 
 
