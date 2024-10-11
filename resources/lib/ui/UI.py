@@ -169,8 +169,6 @@ class UI(object):
         else:
             xbmc.log("plugin.video.3cat - UI - listVideos - Numero videos: " + str(len(listVideos)))
 
-
-
             for video in listVideos:
                 if video:
                     urlVideo = video.url
