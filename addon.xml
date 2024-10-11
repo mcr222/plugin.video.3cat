@@ -18,8 +18,8 @@
         <description lang="es_ES">Toda la programación de TV3 a la carta.[CR]Las listas de los más vistos, destacados, programas ordenados de la A a la Z. [CR]Canales en directo: TV3cat, K33, Super3, 3/24, Esport3</description>
         <language>ca</language>
         <license>GPL-2.0-or-later</license>
-        <source>https://github.com/jqandreu/plugin.video.3cat</source>
-        <website>http://www.tv3.cat</website>
+        <source>https://github.com/mcr222/plugin.video.3cat</source>
+        <website>https://www.3cat.cat/3cat/</website>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.jpg</fanart>
