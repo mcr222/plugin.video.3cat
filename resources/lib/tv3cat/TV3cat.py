@@ -21,11 +21,10 @@ from resources.lib.utils.Utils import *
 
 class TV3cat(object):
     def __init__(self, addon_path, addon):
+        xbmc.log("plugin.video.3cat classe TV3cat - init() ")
         self.strs = TV3Strings(addon)
         self.images = Images(addon_path)
         self.addon_path = addon_path
-
-        xbmc.log("plugin.video.3cat classe TV3cat - init() ")
 
     # mode = None
     def listHome(self):
