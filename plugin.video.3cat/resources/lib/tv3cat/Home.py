@@ -1,6 +1,4 @@
 from resources.lib.video.FolderVideo import FolderVideo
-from resources.lib.utils.Urls import url_coleccions, url_mesvist
-
 
 
 def getList(strings):
