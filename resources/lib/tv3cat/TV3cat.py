@@ -1,13 +1,18 @@
 from __future__ import division
 
 from builtins import object
+from collections import defaultdict
 
 from bs4 import BeautifulSoup
 
+
+from resources.lib.tv3cat import DirAZemisio
+from resources.lib.tv3cat import DirAZtots
 from resources.lib.tv3cat import Home
 from resources.lib.tv3cat.Images import Images
 from resources.lib.tv3cat import Sections
 from resources.lib.utils import Urls
+from resources.lib.utils.Urls import url_base
 from resources.lib.video.FolderVideo import FolderVideo
 from resources.lib.video.Video import Video
 from resources.lib.tv3cat.TV3Strings import TV3Strings

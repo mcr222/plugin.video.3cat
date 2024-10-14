@@ -13,6 +13,8 @@ import xbmc
 import xbmcvfs
 import urllib.parse
 
+from resources.lib.video.Video import Video
+
 PROTOCOL = 'mpd'
 DRM = 'com.widevine.alpha'
 LICENSE_URL = 'https://cwip-shaka-proxy.appspot.com/no_auth'
