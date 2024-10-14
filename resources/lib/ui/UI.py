@@ -1,5 +1,9 @@
+import json
 from builtins import str
 from builtins import object
+
+import urllib.request, urllib.parse, urllib.error
+
 from resources.lib.utils.Utils import buildUrl
 from resources.lib.tv3cat.TV3cat import TV3cat
 import xbmcaddon
@@ -8,6 +12,12 @@ import xbmcgui
 import xbmc
 import xbmcvfs
 import urllib.parse
+
+from resources.lib.video.Video import Video
+
+PROTOCOL = 'mpd'
+DRM = 'com.widevine.alpha'
+LICENSE_URL = 'https://cwip-shaka-proxy.appspot.com/no_auth'
 
 
 class UI(object):
@@ -128,9 +138,13 @@ class UI(object):
 
 
         elif mode[0] == 'getlistvideos':
-
-            lVideos = self.tv3.getListVideos(url[0], None)
+            lVideos = self.tv3.getListVideos(url[0])
             self.listVideos(lVideos)
+
+        elif mode[0] == 'getTemporades':
+            xbmc.log("plugin.video.3cat - Temporades")
+            lFolder = self.tv3.getListTemporades(url[0])
+            self.listFolder(lFolder)
 
         elif mode[0] == 'coleccions':
             xbmc.log("plugin.video.3cat - Coleccions")
@@ -161,86 +175,66 @@ class UI(object):
         xbmcplugin.endOfDirectory(self.addon_handle)
 
     def listVideos(self, lVideos):
+        xbmc.log("plugin.video.3cat - UI - listVideos - Numero videos: " + str(len(lVideos)))
 
-        xbmc.log("-plugin.video.3cat - List videos")
-        last = lVideos[1]
-        listVideos = lVideos[0]
-        if not listVideos:
-            xbmc.log("plugin.video.3cat - UI - listVideos - Numero videos: 0")
-        else:
-            xbmc.log("plugin.video.3cat - UI - listVideos - Numero videos: " + str(len(listVideos)))
+        for video in lVideos:
+            # Create a list item with a text label
+            list_item = xbmcgui.ListItem(label=video.title)
+            # Set graphics (thumbnail, fanart, banner, poster, landscape etc.) for the list item.
+            # Here we use only poster for simplicity's sake.
+            # In a real-life plugin you may need to set multiple image types.
+            list_item.setArt({'poster': video.iconImage})
+            list_item.setProperty('IsPlayable', 'true')
+            # Set additional info for the list item via InfoTag.
+            # 'mediatype' is needed for skin to display info for this ListItem correctly.
+            info_tag = list_item.getVideoInfoTag()
+            info_tag.setMediaType('movie')
+            info_tag.setTitle(video.title)
+            info_tag.setPlot(video.information)
+            # Set 'IsPlayable' property to 'true'.
 
-            for video in listVideos:
-                if video:
-                    urlVideo = video.url
-                    xbmc.log("UI - listVideos - urlVideo: " + urlVideo)
-                    iconImage = video.iconImage
-                    thumbImage = video.thumbnailImage
-                    durada = video.durada
-                    titol = video.title
+            url =  video.url
+            # Add the list item to a virtual Kodi folder.
+            # is_folder = False means that this item won't open any sub-list.
+            is_folder = False
+            # Add our item to the Kodi virtual folder listing.
+            xbmc.log("plugin.video.3cat - UI - directory item " + url)
+            urlPlugin = buildUrl({'mode': 'playVideo', 'name': '', 'url': url}, self.base_url)
 
-                    urlPlugin = buildUrl({'mode':'playVideo','name':"",'url':urlVideo}, self.base_url)
-
-                    liz = xbmcgui.ListItem(titol)
-
-                    infolabels = video.information
-
-                    liz.setInfo('video', infolabels)
-                    liz.setArt({'thumb': thumbImage, 'icon': "DefaultVideo.png"})
-                    liz.addStreamInfo('video', {'duration': durada})
-                    liz.setProperty('isPlayable', 'true')
-                    xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=urlPlugin, listitem=liz)
-
-            if last:
-                mode = last.mode
-                name = last.name
-                url = last.url
-                #xbmc.log("UI - listVideos - urlNext: " + url)
-                iconImage = last.iconImage
-                thumbImage = last.thumbnailImage
-
-                urlPlugin = buildUrl({'mode': mode, 'name': '', 'url': url}, self.base_url)
-                liz = xbmcgui.ListItem(name)
-                liz.setInfo(type="Video", infoLabels={"title": name})
-                liz.setArt({'thumb': thumbImage, 'icon': iconImage})
-
-                xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=urlPlugin, listitem=liz, isFolder=True)
-
-            xbmcplugin.endOfDirectory(self.addon_handle)
+            xbmcplugin.addDirectoryItem(self.addon_handle, urlPlugin, list_item, is_folder)
+            # Add sort methods for the virtual folder items
+        xbmcplugin.addSortMethod(self.addon_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
+        xbmcplugin.addSortMethod(self.addon_handle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
+        # Finish creating a virtual folder.
+        xbmcplugin.endOfDirectory(self.addon_handle)
 
     def playVideo(self,url):
         code = url[-8:-1]
-        xbmc.log("UI - playVideo")
+        xbmc.log("plugin.video.3cat -UI - playVideo " + str(url))
+        videoId = url.split('/')[-1]
 
+        apiJsonUrl = "https://api-media.3cat.cat/pvideo/media.jsp?media=video&versio=vast&idint={}&profile=pc_3cat&format=dm".format(
+            videoId)
+        xbmc.log("plugin.video.3cat -UI - playVideo apijson url" + str(apiJsonUrl))
+        streamMPDFile = ""
+        with urllib.request.urlopen(apiJsonUrl) as response:
+            data = response.read()
+            json_data = json.loads(data)
+            streamMPDFile = json_data['media']['url'][0]['file']
 
-        # html_data = getHtml(url_datavideos + code + '&profile=pc')
-        #
-        # if html_data:
-        #
-        #     html_data = html_data.decode("ISO-8859-1")
-        #     data = json.loads(html_data)
-        #
-        #     urlvideo = None
-        #
-        #     if len(data) > 0:
-        #
-        #         media = data.get('media', {})
-        #
-        #         if type(media) is list and len(media) > 0:
-        #             media_dict = media[0]
-        #             urlvideo = media_dict.get('url', None)
-        #         else:
-        #             urlvideo = media.get('url', None)
-        #
-        #         if urlvideo:
-        #             if type(urlvideo) is list and len(urlvideo) > 0:
-        #                 urlvideo_item = urlvideo[0]
-        #                 video = urlvideo_item.get('file', None)
-        #
-        #             else:
-        #                 video = url
-        #
-        #             xbmc.log("Play video - url:  " + video)
+        xbmc.log("plugin.video.3cat -UI - playVideo mpd file" + str(streamMPDFile))
 
-        item = xbmcgui.ListItem(path=url)
-        xbmcplugin.setResolvedUrl(self.addon_handle, True, item)
+        from inputstreamhelper import Helper  # pylint: disable=import-outside-toplevel
+
+        is_helper = Helper(PROTOCOL, drm=DRM)
+        if is_helper.check_inputstream():
+            play_item = xbmcgui.ListItem(path=streamMPDFile)
+            play_item.setProperty('inputstream', 'inputstream.adaptive')
+            play_item.setProperty('inputstream.adaptive.stream_headers',
+                                  'User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+            play_item.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
+            play_item.setProperty('inputstream.adaptive.manifest_update_interval', '10')
+            play_item.setProperty('inputstream.adaptive.manifest_type', PROTOCOL)
+            play_item.setProperty('inputstream.adaptive.license_type', DRM)
+            play_item.setProperty('inputstream.adaptive.license_key', LICENSE_URL + '||R{SSM}|')
+            xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
