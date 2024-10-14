@@ -32,13 +32,11 @@ class UI(object):
         self.args = args
         self.mode = args.get('mode', None)
         self.url = args.get('url', [''])
-        self.name = args.get('name', None)
         xbmc.log("plugin.video.3cat classe UI - finish init()")
 
 
     def run(self, mode, url):
-        xbmc.log("plugin.video.3cat classe UI - run()  mode = " + str(mode))
-
+        xbmc.log("plugin.video.3cat classe UI - run()  mode = " + str(mode) + ", url " + str(url))
 
         if mode == None:
             xbmc.log("plugin.video.3cat classe UI - mode = None")
@@ -48,34 +46,6 @@ class UI(object):
                 self.listFolder(lFolder)
             else:
                 xbmc.log("plugin.video.3cat - UI.run() Home - No existeixen elements")
-
-        elif mode[0] == 'destaquem':
-            xbmc.log("plugin.video.3cat classe UI - mode = destaquem")
-            lVideos = self.tv3.listDestaquem()
-
-            if len(lVideos) > 0:
-                self.listVideos(lVideos)
-            else:
-                xbmc.log("plugin.video.3cat - UI.run() destaquem - No existeixen videos")
-
-
-        elif mode[0] == 'noperdis':
-
-            lVideos = self.tv3.listNoPerdis()
-
-            if len(lVideos) > 0:
-                self.listVideos(lVideos)
-            else:
-                xbmc.log("plugin.video.3cat - UI.run() noperdis - No existeixen videos")
-
-        elif mode[0] == 'mesvist':
-
-            lVideos = self.tv3.listMesVist()
-
-            if len(lVideos) > 0:
-                self.listVideos(lVideos)
-            else:
-                xbmc.log("plugin.video.3cat - UI.run() mesvist - No existeixen videos")
 
         elif mode[0] == 'programes':
 
@@ -94,33 +64,6 @@ class UI(object):
                 self.listFolder(lFolder)
             else:
                 xbmc.log("plugin.video.3cat - UI.run() sections - No existeixen elements")
-
-        elif mode[0] == 'dirAZemisio':
-
-            lFolder = self.tv3.dirAZemisio()
-
-            if len(lFolder) > 0:
-                self.listFolder(lFolder)
-            else:
-                xbmc.log("plugin.video.3cat - UI.run() dirAZemisio - No existeixen elements")
-
-        elif mode[0] == 'dirAZtots':
-
-            lFolder = self.tv3.dirAZtots()
-
-            if len(lFolder) > 0:
-                self.listFolder(lFolder)
-            else:
-                xbmc.log("plugin.video.3cat - UI.run() dirAZtots - No existeixen elements")
-
-        elif mode[0] == 'progAZ':
-            letters = self.name[0]
-            lFolder = self.tv3.programesAZ(url[0], letters)
-
-            if len(lFolder) > 0:
-                self.listFolder(lFolder)
-            else:
-                xbmc.log("plugin.video.3cat - UI.run() progAZ - No existeixen elements")
 
         elif mode[0] == 'directe':
 
@@ -141,6 +84,11 @@ class UI(object):
             lVideos = self.tv3.getListVideos(url[0])
             self.listVideos(lVideos)
 
+        elif mode[0] == 'getProgrames':
+            xbmc.log("plugin.video.3cat - Programes")
+            lFolder = self.tv3.listProgrames(url[0])
+            self.listFolder(lFolder)
+
         elif mode[0] == 'getTemporades':
             xbmc.log("plugin.video.3cat - Temporades")
             lFolder = self.tv3.getListTemporades(url[0])
@@ -152,7 +100,6 @@ class UI(object):
             self.listFolder(lFolder)
 
         elif mode[0] == 'playVideo':
-
             self.playVideo(url[0])
 
     def listFolder(self, lFolderVideos):
@@ -161,12 +108,11 @@ class UI(object):
 
             mode = folder.mode
             name = folder.name
-            nameQuoted = urllib.parse.quote(name)
             url = folder.url
             iconImage = folder.iconImage
             thumbImage = folder.thumbnailImage
 
-            urlPlugin = buildUrl({'mode': mode, 'name': nameQuoted, 'url': url}, self.base_url)
+            urlPlugin = buildUrl({'mode': mode, 'url': url}, self.base_url)
             liz = xbmcgui.ListItem(name)
             liz.setInfo(type="Video", infoLabels={"title": name})
             liz.setArt({'thumb': thumbImage, 'icon' : iconImage})
@@ -198,8 +144,8 @@ class UI(object):
             # is_folder = False means that this item won't open any sub-list.
             is_folder = False
             # Add our item to the Kodi virtual folder listing.
-            xbmc.log("plugin.video.3cat - UI - directory item " + url)
-            urlPlugin = buildUrl({'mode': 'playVideo', 'name': '', 'url': url}, self.base_url)
+            xbmc.log("plugin.video.3cat - UI - directory item " + str(url))
+            urlPlugin = buildUrl({'mode': 'playVideo', 'url': url}, self.base_url)
 
             xbmcplugin.addDirectoryItem(self.addon_handle, urlPlugin, list_item, is_folder)
             # Add sort methods for the virtual folder items
@@ -208,10 +154,8 @@ class UI(object):
         # Finish creating a virtual folder.
         xbmcplugin.endOfDirectory(self.addon_handle)
 
-    def playVideo(self,url):
-        code = url[-8:-1]
-        xbmc.log("plugin.video.3cat -UI - playVideo " + str(url))
-        videoId = url.split('/')[-1]
+    def playVideo(self,videoId):
+        xbmc.log("plugin.video.3cat -UI - playVideo " + str(videoId))
 
         apiJsonUrl = "https://api-media.3cat.cat/pvideo/media.jsp?media=video&versio=vast&idint={}&profile=pc_3cat&format=dm".format(
             videoId)

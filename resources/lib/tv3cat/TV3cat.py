@@ -1,9 +1,8 @@
 from __future__ import division
 
 from builtins import object
-import re
-import xbmc
-import urllib.parse
+from collections import defaultdict
+
 from bs4 import BeautifulSoup
 
 
@@ -13,6 +12,7 @@ from resources.lib.tv3cat import Home
 from resources.lib.tv3cat.Images import Images
 from resources.lib.tv3cat import Sections
 from resources.lib.utils import Urls
+from resources.lib.utils.Urls import url_base
 from resources.lib.video.FolderVideo import FolderVideo
 from resources.lib.video.Video import Video
 from resources.lib.tv3cat.TV3Strings import TV3Strings
@@ -32,261 +32,82 @@ class TV3cat(object):
 
         return Home.getList(self.strs)
 
-    # mode = destaquem
-    def listDestaquem(self):
-        xbmc.log("plugin.video.3cat classe Tv3cat - listDestaquem() ")
-        html_destacats = getHtml(Urls.url_alacarta)
-
-        lVideos = []
-
-        if html_destacats:
-
-            soup = BeautifulSoup(html_destacats, "html.parser")
-            dest = None
-
-            try:
-
-                destacats = soup.findAll("article", {"class": re.compile("M-destacat")})
-
-
-                destacats2 = soup.findAll("div", {"class": re.compile("swiper-slide")})
-
-                destacats.extend(destacats2)
-
-                for c in destacats:
-                    a = c.a["href"]
-                    code = a[-8:-1]
-
-
-                    html_data = getHtml(Urls.url_datavideos + code + '&profile=pc')
-
-                    html_data = html_data.decode("ISO-8859-1")
-                    data = json.loads(html_data)
-
-                    if len(data) > 0:
-                        video = self.getVideo(data)
-                        lVideos.append(video)
-
-            except AttributeError as e:
-                xbmc.log("Exception AtributeError Altres items: " + str(e))
-            except KeyError as e:
-                xbmc.log("Exception KeyError Altres items: " + str(e))
-            except Exception as e:
-                xbmc.log("Exception Item destacat: " + str(e))
-
-        xbmc.log("listDestaquem len: " + str(len(lVideos)))
-
-        result = [None] * 2
-        result[0] = lVideos
-        return result
-
-
-    # mode = noperdis
-    def listNoPerdis(self):
-        xbmc.log("--------------listNoPerdis----------")
-
-        lVideos = []
-
-        link = getHtml(Urls.url_coleccions)
+    def getJsonDataNextData(self, url):
+        link = getHtml(url)
 
         if link:
-
             soup = BeautifulSoup(link, "html.parser")
 
-            try:
-                links = soup.findAll("li", {"class": "sensePunt R-elementLlistat  C-llistatVideo"})
+            script_tag = soup.find('script', id='__NEXT_DATA__')
+            if script_tag:
+                xbmc.log("plugin.video.3cat - found script")
 
-                if not links:
-                    links = soup.findAll("li", {"class": "sensePunt R-elementLlistat  C-llistatVideo "})
+                # Find all items with 'nombonic' and 'id'
+                # Extract the JSON content from the script tag
+                json_content = script_tag.string
+                # print(json_content)
+                # Extract the data from the JSON content
+                data = json.loads(json_content)
 
-                if not links:
-                    links = soup.findAll("li", {"class": "sensePunt R-elementLlistat  C-llistatVideo  "})
+                # Extract the required information
+                return data
 
-                for i in links:
-                    a = i.a["href"]
-                    code = a[-8:-1]
+        return []
 
-                    link = getHtml(Urls.url_datavideos + code + '&profile=pc')
+    def getTotsProgrames(self):
+        data = self.getJsonDataNextData(Urls.url_coleccions)
+        if not data:
+            return []
+        # Extract the required information
+        return data['props']['pageProps']['layout']['structure'][4]['children'][0]['finalProps']['items']
 
-                    link = link.decode("ISO-8859-1")
-                    data = json.loads(link)
+    def getProgramaId(self, titolPrograma):
+        data = self.getJsonDataNextData(Urls.url_base + titolPrograma)
+        if not data:
+            return []
 
-                    if len(data) > 0:
-                        video = self.getVideo(data)
-                        lVideos.append(video)
+        return data['props']['pageProps']['layout']['structure'][3]['children'][0]['finalProps']['programaId']
 
-            except AttributeError as e:
-                xbmc.log("Exception AtributeError NoPerdis: " + str(e))
-            except KeyError as e:
-                xbmc.log("Exception KeyError NoPerdis: " + str(e))
-            except Exception as e:
-                xbmc.log("Exception Item destacat: " + str(e))
+    # mode = coleccions
+    def listProgrames(self, nomCategoria):
+        xbmc.log("plugin.video.3cat - programes per categoria " + nomCategoria)
+        lFolderVideos = []
+        categories = self.getTotsProgrames()
+        for categoria in categories:
+            if nomCategoria == categoria['valor']:
+                xbmc.log("plugin.video.3cat - Found categoria " + nomCategoria)
+                items = categoria['item']
+                for item in items:
+                    if 'nombonic' in item and 'id' in item:
+                        xbmc.log("plugin.video.3cat - element " + str(item))
+                        titol = item['nombonic']
+                        img = self.extractImageIfAvailable(item, "IMG_POSTER")
+                        foldVideo = FolderVideo(titol, titol, 'getTemporades', img, img)
+                        lFolderVideos.append(foldVideo)
 
-        result = [None] * 2
-        result[0] = lVideos
-        return result
+                return lFolderVideos
 
+        return lFolderVideos
 
-    # mode = mesvist
-    def listMesVist(self):
-        xbmc.log("--------------listMesVist----------")
-
-        lVideos = []
-
-        link = getHtml(Urls.url_mesvist)
-
-        if link:
-
-            soup = BeautifulSoup(link, "html.parser")
-
-            try:
-                links = soup.findAll("li", {"class": re.compile("C-llistatVideo")})
-
-                for i in links:
-                    a = i.a["href"]
-                    code = a[-8:-1]
-
-                    link = getHtml(Urls.url_datavideos + code + '&profile=pc')
-
-                    link = link.decode("ISO-8859-1")
-                    data = json.loads(link)
-
-
-
-                    if len(data) > 0:
-                        video = self.getVideo(data)
-                        lVideos.append(video)
-
-            except AttributeError as e:
-                xbmc.log("Exception AtributeError listMesVist: " + str(e))
-            except KeyError as e:
-                xbmc.log("Exception KeyError listMesVist: " + str(e))
-            except Exception as e:
-                xbmc.log("Exception listMesVist: " + str(e))
-
-        result = [None] * 2
-        result[0] = lVideos
-        return result
 
     # mode = coleccions
     def listColeccions(self):
         xbmc.log("plugin.video.3cat - listColeccions")
         lFolderVideos = []
 
-        link = getHtml(Urls.url_coleccions)
-
-        if link:
-            soup = BeautifulSoup(link, "html.parser")
-
-            try:
-
-                script_tag = soup.find('script', id='__NEXT_DATA__')
-                if script_tag:
-                    xbmc.log("plugin.video.3cat - found script")
-
-                    # Find all items with 'nombonic' and 'id'
-                    # Extract the JSON content from the script tag
-                    json_content = script_tag.string
-                    #print(json_content)
-                    # Extract the data from the JSON content
-                    data = json.loads(json_content)
-
-                    # Extract the required information
-                    programesData = data['props']['pageProps']['layout']['structure'][4]['children'][0]['finalProps'][
-                        'items']
-                    for categoria in programesData:
-                        xbmc.log("plugin.video.3cat - Found categoria " + categoria['valor'])
-                        for item in categoria['item']:
-                            if 'nombonic' in item and 'id' in item:
-                                xbmc.log("plugin.video.3cat - element " + str(item))
-                                titol = item['nombonic']
-                                img = self.extractImageIfAvailable(item)
-                                foldVideo = FolderVideo(titol, Urls.url_base + titol, 'getTemporades', img, img)
-                                lFolderVideos.append(foldVideo)
-
-            except AttributeError as e:
-                xbmc.log("plugin.video.3cat - Exception AtributeError listColeccions: " + str(e))
-            except KeyError as e:
-                xbmc.log("plugin.video.3cat - Exception KeyError listColeccions: " + str(e))
-            except Exception as e:
-                xbmc.log("plugin.video.3cat - Exception listColeccions: " + str(e))
-
+        for categoria in self.getTotsProgrames():
+            print(categoria)
+            nom_categoria = categoria['valor']
+            xbmc.log("plugin.video.3cat - Found categoria " + nom_categoria)
+            foldVideo = FolderVideo(nom_categoria, nom_categoria, 'getProgrames')
+            lFolderVideos.append(foldVideo)
 
         return lFolderVideos
 
 
     # mode = programes
     def dirSections(self):
-
         return Sections.getList(self.strs)
-
-    # mode = dirAZemisio
-    def dirAZemisio(self):
-
-        return DirAZemisio.getList()
-
-    #mode = dirAZtots
-    def dirAZtots(self):
-
-        return DirAZtots.getList()
-
-    # mode = sections
-    def programsSections(self, url):
-        xbmc.log("-------------------------programsSections----------------------")
-        lFolderVideos = []
-
-        link = getHtml(Urls.url_programes_emisio + url)
-
-        if link:
-            soup = BeautifulSoup(link)
-
-            try:
-                # Grups programes de cada lletra
-                links = soup.findAll("ul", {"class": "R-abcProgrames"})
-
-                for i in links:
-                    ls = i.findAll("li")
-
-                    for li in ls:
-                        url = li.a["href"]
-                        t = str(li.a.string)
-                        titol = re.sub(r'^[\n\r\s]+', '', t)
-
-                        # test url
-                        urlProg = Urls.url_base + url
-                        if urlProg == Urls.urlApm or urlProg == Urls.urlZonaZaping:
-                            url_final = urlProg + 'clips/'
-
-                        elif 'super3' in url:
-                            if 'https:' not in url:
-                                url_final = 'https:' + url
-                            else:
-                                url_final = url
-
-
-                        else:
-                            match = re.compile(r'(http://www.ccma.cat/tv3/alacarta/.+?/fitxa-programa/)(\d+/)').findall(
-                                urlProg)
-                            if len(match) != 0:
-                                url1 = match[0][0]
-                                urlcode = match[0][1]
-                                url_final = url1 + 'capitols/' + urlcode
-                            else:
-                                url_final = urlProg + 'capitols/'
-
-
-                        foldVideo = FolderVideo(titol, url_final, 'getlistvideos', "", "")
-                        lFolderVideos.append(foldVideo)
-
-            except AttributeError as e:
-                xbmc.log("Exception AtributeError listSections: " + str(e))
-            except KeyError as e:
-                xbmc.log("Exception KeyError listSections: " + str(e))
-            except Exception as e:
-                xbmc.log("Exception listSections: " + str(e))
-
-        return lFolderVideos
-
 
     # mode = directe
     def listDirecte(self):
@@ -389,169 +210,79 @@ class TV3cat(object):
         result[0] = lVideos
         return result
 
+    def getProgramaData(self, programaId):
+        apiUrl = ("https://api.3cat.cat/videos?version=2.0&_format=json&items_pagina=1000&capitol=1|&tipus_contingut=PPD&ordre=capitol&idioma=PU_CATALA&programatv_id={}&perfil=pc"
+                  .format(programaId))
 
-    # mode = progAZ
-    def programesAZ(self, paramUrl, letters):
-        xbmc.log("--------------------programesAZ------------------")
-        letters = urllib.parse.unquote(letters)
-        lFolderVideos = []
-        url = ""
-
-        if paramUrl == "emisio":
-            url = Urls.url_programes_emisio
-        else:
-            url = Urls.url_programes_tots
-
-        html = getHtml(url)
-
-
-        if html:
-
-            soup = BeautifulSoup(html.decode('utf-8', 'ignore'), "html.parser")
-
-            elements = soup.findAll("ul", {"class": "R-abcProgrames"})
-
-            li = None
-
-
-            if len(elements) > 0:
-
-                if letters == "#A-C":
-
-                    li = elements[0:4]
-
-                elif letters == "D-E":
-
-                    li = elements[4:6]
-
-                elif letters == "F-I":
-
-                    li = elements[6:10]
-
-                elif letters == "J-L":
-
-                    li = elements[10:13]
-
-                elif letters == "M-P":
-
-                    li = elements[13:17]
-
-                elif letters == "Q-S":
-
-                    li = elements[17:20]
-
-                elif letters == "T-V":
-
-                    li = elements[20:23]
-
-                elif letters == "X-Z":
-
-                    li = elements[23:]
-
-                if li != None and len(li) > 0:
-
-                    for l in li:
-
-                        links = l.findAll("li")
-
-                        if len(links) > 0:
-
-                            for i in links:
-                                #xbmc.log("progsAZ - li: " + str(i).encode('utf-8'))
-
-                                url = i.a["href"]
-                                titol = i.a.string.strip().encode("utf-8")
-
-                                # test url
-                                urlProg = Urls.url_base + url
-                                if urlProg == Urls.urlApm or urlProg == Urls.urlZonaZaping:
-                                    url_final = urlProg + 'clips/'
-
-                                elif 'super3' in url:
-                                    if 'https:' not in url:
-                                        url_final = 'https:' + url
-                                    else:
-                                        url_final = url
-
-                                else:
-                                    match = re.compile(
-                                        r'(http://www.ccma.cat/tv3/alacarta/.+?/fitxa-programa/)(\d+/)').findall(urlProg)
-                                    if len(match) != 0:
-                                        url1 = match[0][0]
-                                        urlcode = match[0][1]
-                                        url_final = url1 + 'capitols/' + urlcode
-                                    else:
-                                        url_final = urlProg + 'capitols/'
-
-                                folderVideo = FolderVideo(titol, url_final, 'getlistvideos', "", "")
-                                lFolderVideos.append(folderVideo)
-                                #xbmc.log("progsAZ - Titol: " + titol)
-                                #xbmc.log("progsAZ - url: " + url_final)
-
-
-        return  lFolderVideos
+        with urllib.request.urlopen(apiUrl) as response:
+            data = response.read()
+            json_data = json.loads(data)
+            return json_data['resposta']['items']['item']
 
     #mode getTemporades
-    def getListTemporades(self, url):
-        xbmc.log("plugin.video.3cat llista temporades " + url)
+    def getListTemporades(self, programaTitol):
+        xbmc.log("plugin.video.3cat llista temporades " + programaTitol)
         lFolderVideos = []
-        for i in range(1,100):
-            urlTemporada = url + "/capitols/temporada/" + str(i)
-            foldVideo = FolderVideo("Temporada " + str(i), urlTemporada , 'getlistvideos', '', '')
-            videosTemporada = self.getListVideos(urlTemporada)
-            if len(videosTemporada)>0:
-                xbmc.log("plugin.video.3cat trobada temporada " + str(i))
-                lFolderVideos.append(foldVideo)
+        programaId = self.getProgramaId(programaTitol)
+        items = self.getProgramaData(programaId)
+
+        # Set to store unique temporades
+        unique_temporades = set()
+
+        # Count items without temporades
+        sense_temporada_count = 0
+
+        for item in items:
+            if item.get('temporades'):
+                # Only consider the first temporada
+                first_temporada = item['temporades'][0]['desc']
+                unique_temporades.add(first_temporada)
             else:
-                break
+                sense_temporada_count += 1
+
+        # Add "Sense Temporada" if there are items without temporades
+        if sense_temporada_count > 0:
+            unique_temporades.add("Sense Temporada")
+
+        for temporada in unique_temporades:
+            foldVideo = FolderVideo(temporada, str(programaId) + "_" + str(temporada), 'getlistvideos', '', '')
+            lFolderVideos.append(foldVideo)
 
         return lFolderVideos
 
-
-    def extractImageIfAvailable(self, item):
+    def extractImageIfAvailable(self, item, keyimatge):
         # Extract image links if available
         if 'imatges' in item and isinstance(item['imatges'], list):
             for image in item['imatges']:
                 if 'text' in image and image['text'].startswith('http') \
-                        and image['rel_name'] == "IMG_POSTER":
+                        and image['rel_name'] == keyimatge:
                     return image['text']
 
     # mode = getlistvideos
     def getListVideos(self, url):
         xbmc.log("plugin.video.3cat - get list videos " + str(url))
+        (programaId, target_temporada) = url.split('_')
         lVideos = []
+        matching_items = []
 
-        link = getHtml(url)
+        for item in self.getProgramaData(programaId):
+            if item.get('temporades'):
+                # Only consider the first temporada
+                first_temporada = item['temporades'][0]['desc']
+                if first_temporada == target_temporada:
+                    matching_items.append(item)
+            elif target_temporada == "Sense Temporada":
+                matching_items.append(item)
 
-        if link:
-            soup = BeautifulSoup(link, "html.parser")
-
-            try:
-
-                script_tag = soup.find('script', id='__NEXT_DATA__')
-                if script_tag:
-                    xbmc.log("plugin.video.3cat - found script")
-
-                    # Find all items with 'nombonic' and 'id'
-                    # Extract the JSON content from the script tag
-                    json_content = script_tag.string
-                    # print(json_content)
-                    # Extract the data from the JSON content
-                    data = json.loads(json_content)
-
-                    capitols = data['props']['pageProps']['layout']['structure'][4]['children'][0]['children'][0]['finalProps']['items']
-                    xbmc.log("plugin.video.3cat - capitols trobats " + str(len(capitols)))
-                    for item in capitols:
-                        if 'nom_friendly' in item and 'id' in item:
-                            xbmc.log("plugin.video.3cat - element " + str(item))
-                            img = self.extractImageIfAvailable(item)
-                            urlVideo = Urls.url_base + str(item['nom_friendly']) + "/video/" + str(item['id'])
-                            video = Video(item['titol'], img, img, item.get('entradeta'), urlVideo, item['durada'])
-                            lVideos.append(video)
-
-            except Exception as e:
-                xbmc.log("plugin.video.3cat - Exception listColeccions: " + str(e))
-                print(e)
+        # Display results
+        if matching_items:
+            print(f"Items matching temporada '{target_temporada}':")
+            for item in matching_items:
+                img = self.extractImageIfAvailable(item, "KEYVIDEO")
+                video = Video(item['titol'], img, img, item.get('entradeta'), item['id'], item['durada'])
+                lVideos.append(video)
+        else:
+            print(f"No items found for temporada '{target_temporada}'")
 
         return lVideos
 
