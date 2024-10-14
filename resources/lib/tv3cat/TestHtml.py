@@ -2,7 +2,7 @@ import json
 
 from resources.lib.tv3cat.TV3cat import TV3cat
 import urllib.request, urllib.parse, urllib.error
-
+#un munt de testos de les diferents funcions usades
 tv3 = TV3cat("", "")
 #tv3.listColeccions()
 tv3.listProgrames("A")
