@@ -1,4 +1,4 @@
-# plugin.video.3cat.cat
+# plugin.video.3cat
 Kodi addon 3Cat. 
 Entertainment, news, sports, documentaries, etc from catalan television www.3cat.cat/3cat/
 
