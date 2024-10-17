@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.3cat" name="3Cat" version="1.0.0" provider-name="mcr222">
+<addon id="plugin.video.3cat" name="3Cat" version="1.1.0" provider-name="mcr222">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
 		<import addon="script.module.beautifulsoup4"/>
@@ -11,12 +11,12 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <platform>all</platform>
-        <summary lang="en_GB">Entertainment, news, documentaries, etc from catalan television www.tv3.cat</summary>
-        <description lang="en_GB">Entertainment, news, documentaries, etc from catalan television www.tv3.cat. [CR]Featured shows, most viewed, A to Z programs. [CR]Live channels: TV3cat, K33, Super3, News 3/24, Esport3</description>
-        <summary lang="ca_ES">Tots els programes de TV3 a la carta.</summary>
-        <description lang="ca_ES">Tota la programació de TV3 a la carta. [CR]Les llistes dels més vistos, destacats, programes ordenats per ordre alfabètic. [CR]Els canals en directe: TV3cat, K33, Super3, 3/24 i Esport3 </description>
-        <summary lang="es_ES">Toda la programación de TV3 a la carta</summary>
-        <description lang="es_ES">Toda la programación de TV3 a la carta.[CR]Las listas de los más vistos, destacados, programas ordenados de la A a la Z. [CR]Canales en directo: TV3cat, K33, Super3, 3/24, Esport3</description>
+        <summary lang="en_GB">Entertainment, news, documentaries, etc from catalan television 3cat.cat</summary>
+        <description lang="en_GB">Entertainment, news, documentaries, etc from catalan television 3cat.cat. </description>
+        <summary lang="ca_ES">Tots els programes de 3Cat.</summary>
+        <description lang="ca_ES">Tota la programació de 3Cat.</description>
+        <summary lang="es_ES">Toda la programación de 3Cat</summary>
+        <description lang="es_ES">Toda la programación de 3Cat</description>
         <language>ca</language>
         <license>GPL-2.0-or-later</license>
         <source>https://github.com/mcr222/plugin.video.3cat</source>
