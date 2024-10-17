@@ -159,26 +159,32 @@ class UI(object):
 
         apiJsonUrl = "https://api-media.3cat.cat/pvideo/media.jsp?media=video&versio=vast&idint={}&profile=pc_3cat&format=dm".format(
             videoId)
-        xbmc.log("plugin.video.3cat -UI - playVideo apijson url" + str(apiJsonUrl))
-        streamMPDFile = ""
+        xbmc.log("plugin.video.3cat - UI - playVideo apijson url" + str(apiJsonUrl))
+        streamUrl = ""
         with urllib.request.urlopen(apiJsonUrl) as response:
             data = response.read()
             json_data = json.loads(data)
-            streamMPDFile = json_data['media']['url'][0]['file']
+            streamUrl = json_data['media']['url'][0]['file']
 
-        xbmc.log("plugin.video.3cat -UI - playVideo mpd file" + str(streamMPDFile))
+        xbmc.log("plugin.video.3cat - UI - playVideo mpd/mp4 file " + str(streamUrl))
+        is_mp4 = streamUrl.lower().endswith('.mp4')
 
-        from inputstreamhelper import Helper  # pylint: disable=import-outside-toplevel
+        if is_mp4:
+            xbmc.log("plugin.video.3cat - UI - is mp4")
+            # Simple MP4 playback
+            xbmc.Player().play(streamUrl)
+        else:
+            from inputstreamhelper import Helper  # pylint: disable=import-outside-toplevel
 
-        is_helper = Helper(PROTOCOL, drm=DRM)
-        if is_helper.check_inputstream():
-            play_item = xbmcgui.ListItem(path=streamMPDFile)
-            play_item.setProperty('inputstream', 'inputstream.adaptive')
-            play_item.setProperty('inputstream.adaptive.stream_headers',
-                                  'User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
-            play_item.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
-            play_item.setProperty('inputstream.adaptive.manifest_update_interval', '10')
-            play_item.setProperty('inputstream.adaptive.manifest_type', PROTOCOL)
-            play_item.setProperty('inputstream.adaptive.license_type', DRM)
-            play_item.setProperty('inputstream.adaptive.license_key', LICENSE_URL + '||R{SSM}|')
-            xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
+            is_helper = Helper(PROTOCOL, drm=DRM)
+            if is_helper.check_inputstream():
+                play_item = xbmcgui.ListItem(path=streamUrl)
+                play_item.setProperty('inputstream', 'inputstream.adaptive')
+                play_item.setProperty('inputstream.adaptive.stream_headers',
+                                      'User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+                play_item.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
+                play_item.setProperty('inputstream.adaptive.manifest_update_interval', '10')
+                play_item.setProperty('inputstream.adaptive.manifest_type', PROTOCOL)
+                play_item.setProperty('inputstream.adaptive.license_type', DRM)
+                play_item.setProperty('inputstream.adaptive.license_key', LICENSE_URL + '||R{SSM}|')
+                xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
