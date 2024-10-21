@@ -42,7 +42,7 @@ class TV3cat(object):
             if script_tag:
                 xbmc.log("plugin.video.3cat - found script")
 
-                # Find all items with 'nombonic' and 'id'
+                # Find all items with 'titol' and 'id'
                 # Extract the JSON content from the script tag
                 json_content = script_tag.string
                 # print(json_content)
@@ -78,11 +78,12 @@ class TV3cat(object):
                 xbmc.log("plugin.video.3cat - Found categoria " + nomCategoria)
                 items = categoria['item']
                 for item in items:
-                    if 'nombonic' in item and 'id' in item:
+                    if 'titol' in item and 'id' in item:
                         xbmc.log("plugin.video.3cat - element " + str(item))
-                        titol = item['nombonic']
+                        titol = item['titol']
+                        nombonic = item['nombonic']
                         img = self.extractImageIfAvailable(item, "IMG_POSTER")
-                        foldVideo = FolderVideo(titol, titol, 'getTemporades', img, img)
+                        foldVideo = FolderVideo(titol, nombonic, 'getTemporades', img, img)
                         lFolderVideos.append(foldVideo)
 
                 return lFolderVideos
