@@ -171,18 +171,18 @@ class UI(object):
             streamUrl = json_data['media']['url'][0]['file']
 
         xbmc.log("plugin.video.3cat - UI - playVideo mpd/mp4 file " + str(streamUrl))
-        is_mp4 = streamUrl.lower().endswith('.mp4')
+        play_item = xbmcgui.ListItem(path=streamUrl)
 
+        is_mp4 = streamUrl.lower().endswith('.mp4')
         if is_mp4:
             xbmc.log("plugin.video.3cat - UI - is mp4")
-            # Simple MP4 playback
-            xbmc.Player().play(streamUrl)
+            play_item.setProperty('IsPlayable', 'true')
+            xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
         else:
             from inputstreamhelper import Helper  # pylint: disable=import-outside-toplevel
 
             is_helper = Helper(PROTOCOL, drm=DRM)
             if is_helper.check_inputstream():
-                play_item = xbmcgui.ListItem(path=streamUrl)
                 play_item.setProperty('inputstream', 'inputstream.adaptive')
                 play_item.setProperty('inputstream.adaptive.stream_headers',
                                       'User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
