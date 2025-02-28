@@ -1,4 +1,7 @@
-﻿v1.2.0
+﻿v1.2.1
+- Replaced "Simple MP4 Playback" by "xbmcplugin.setResolvedUrl" with "ListItem"
+
+v1.2.0
 - Added direct stream
 - Fix naming
 
