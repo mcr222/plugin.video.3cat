@@ -175,8 +175,9 @@ class UI(object):
 
         if is_mp4:
             xbmc.log("plugin.video.3cat - UI - is mp4")
-            # Simple MP4 playback
-            xbmc.Player().play(streamUrl)
+            play_item = xbmcgui.ListItem(path=streamUrl)
+            play_item.setProperty('IsPlayable', 'true')
+            xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
         else:
             from inputstreamhelper import Helper  # pylint: disable=import-outside-toplevel
 
