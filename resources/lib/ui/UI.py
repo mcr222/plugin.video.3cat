@@ -15,7 +15,9 @@ import urllib.parse
 
 PROTOCOL = 'mpd'
 DRM = 'com.widevine.alpha'
-LICENSE_URL = 'https://cwip-shaka-proxy.appspot.com/no_auth'
+# The generic license URL was causing issues on some devices
+# 3cat doesn't use DRM for most content, so we'll set this to empty and only use when needed
+LICENSE_URL = ''
 
 
 class UI(object):
@@ -157,39 +159,146 @@ class UI(object):
 
         if str(videoId).lower().startswith("http"):
             xbmc.log("plugin.video.3cat - UI - is stream link")
-            # Simple MP4 playback
-            xbmc.Player().play(videoId)
+            # For direct stream links (like live TV)
+            if videoId.lower().endswith('.m3u8'):
+                # HLS stream
+                self.playHLSStream(videoId)
+            elif videoId.lower().endswith('.mp4'):
+                # Simple MP4 playback
+                self.playMP4Stream(videoId)
+            else:
+                # Try to play directly as fallback
+                xbmc.Player().play(videoId)
             return
 
+        # For video IDs, fetch the stream URL from the API
         apiJsonUrl = "https://api-media.3cat.cat/pvideo/media.jsp?media=video&versio=vast&idint={}&profile=pc_3cat&format=dm".format(
             videoId)
         xbmc.log("plugin.video.3cat - UI - playVideo apijson url" + str(apiJsonUrl))
-        streamUrl = ""
-        with urllib.request.urlopen(apiJsonUrl) as response:
-            data = response.read()
-            json_data = json.loads(data)
-            streamUrl = json_data['media']['url'][0]['file']
+        
+        try:
+            with urllib.request.urlopen(apiJsonUrl) as response:
+                data = response.read()
+                json_data = json.loads(data)
+                
+                # Check if we have valid media data
+                if 'media' not in json_data or 'url' not in json_data['media'] or not json_data['media']['url']:
+                    xbmc.log("plugin.video.3cat - UI - Error: Invalid API response", level=xbmc.LOGERROR)
+                    xbmcgui.Dialog().notification('Error', 'Could not get video URL from 3cat', xbmcgui.NOTIFICATION_ERROR)
+                    return
+                
+                streamUrl = json_data['media']['url'][0]['file']
+                xbmc.log("plugin.video.3cat - UI - playVideo stream URL: " + str(streamUrl))
+                
+                # Determine stream type and play accordingly
+                if streamUrl.lower().endswith('.mp4'):
+                    self.playMP4Stream(streamUrl)
+                elif streamUrl.lower().endswith('.m3u8'):
+                    self.playHLSStream(streamUrl)
+                elif streamUrl.lower().endswith('.mpd'):
+                    self.playMPDStream(streamUrl)
+                else:
+                    # Try adaptive streaming as fallback
+                    self.playMPDStream(streamUrl)
+        except Exception as e:
+            xbmc.log("plugin.video.3cat - UI - Error fetching video: " + str(e), level=xbmc.LOGERROR)
+            xbmcgui.Dialog().notification('Error', 'Could not play video: ' + str(e), xbmcgui.NOTIFICATION_ERROR)
 
-        xbmc.log("plugin.video.3cat - UI - playVideo mpd/mp4 file " + str(streamUrl))
-        is_mp4 = streamUrl.lower().endswith('.mp4')
+    def playMP4Stream(self, streamUrl):
+        """Play a simple MP4 stream"""
+        xbmc.log("plugin.video.3cat - UI - Playing MP4: " + streamUrl)
+        play_item = xbmcgui.ListItem(path=streamUrl)
+        play_item.setProperty('IsPlayable', 'true')
+        xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
 
-        if is_mp4:
-            xbmc.log("plugin.video.3cat - UI - is mp4")
+    def playHLSStream(self, streamUrl):
+        """Play an HLS stream using inputstream.adaptive"""
+        xbmc.log("plugin.video.3cat - UI - Playing HLS: " + streamUrl)
+        try:
+            from inputstreamhelper import Helper
+            is_helper = Helper('hls')
+            if is_helper.check_inputstream():
+                play_item = xbmcgui.ListItem(path=streamUrl)
+                play_item.setProperty('inputstream', 'inputstream.adaptive')
+                play_item.setProperty('inputstream.adaptive.manifest_type', 'hls')
+                play_item.setProperty('inputstream.adaptive.stream_headers',
+                                    'User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+                xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
+            else:
+                # Fallback to direct play if inputstream.adaptive is not available
+                play_item = xbmcgui.ListItem(path=streamUrl)
+                xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
+        except ImportError:
+            # Fallback if inputstreamhelper is not available
             play_item = xbmcgui.ListItem(path=streamUrl)
-            play_item.setProperty('IsPlayable', 'true')
             xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
-        else:
-            from inputstreamhelper import Helper  # pylint: disable=import-outside-toplevel
 
-            is_helper = Helper(PROTOCOL, drm=DRM)
+    def playMPDStream(self, streamUrl):
+        """Play an MPD (DASH) stream using inputstream.adaptive with optional DRM"""
+        xbmc.log("plugin.video.3cat - UI - Playing MPD: " + streamUrl)
+        try:
+            from inputstreamhelper import Helper
+            
+            # Check if this stream might need DRM
+            needs_drm = False
+            try:
+                # Try to fetch the MPD manifest to check for ContentProtection elements
+                with urllib.request.urlopen(streamUrl) as response:
+                    mpd_content = response.read().decode('utf-8')
+                    if 'ContentProtection' in mpd_content:
+                        needs_drm = True
+                        xbmc.log("plugin.video.3cat - UI - DRM content protection detected", level=xbmc.LOGINFO)
+            except:
+                # If we can't check, assume no DRM is needed
+                pass
+            
+            # Initialize inputstream helper with or without DRM
+            if needs_drm:
+                is_helper = Helper(PROTOCOL, drm=DRM)
+            else:
+                is_helper = Helper(PROTOCOL)
+                
             if is_helper.check_inputstream():
                 play_item = xbmcgui.ListItem(path=streamUrl)
                 play_item.setProperty('inputstream', 'inputstream.adaptive')
                 play_item.setProperty('inputstream.adaptive.stream_headers',
-                                      'User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+                                    'User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
                 play_item.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
-                play_item.setProperty('inputstream.adaptive.manifest_update_interval', '10')
                 play_item.setProperty('inputstream.adaptive.manifest_type', PROTOCOL)
-                play_item.setProperty('inputstream.adaptive.license_type', DRM)
-                play_item.setProperty('inputstream.adaptive.license_key', LICENSE_URL + '||R{SSM}|')
+                
+                # Only set DRM properties if needed
+                if needs_drm:
+                    # Try to extract license URL from the MPD if available
+                    license_url = self.extract_license_url_from_mpd(mpd_content) if 'mpd_content' in locals() else None
+                    
+                    if not license_url and LICENSE_URL:
+                        license_url = LICENSE_URL
+                    
+                    if license_url:
+                        play_item.setProperty('inputstream.adaptive.license_type', DRM)
+                        play_item.setProperty('inputstream.adaptive.license_key', license_url + '||R{SSM}|')
+                        xbmc.log("plugin.video.3cat - UI - Using license URL: " + license_url, level=xbmc.LOGINFO)
+                
                 xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
+            else:
+                # Fallback to direct play if inputstream.adaptive is not available
+                xbmc.log("plugin.video.3cat - UI - inputstream.adaptive not available, trying direct play", level=xbmc.LOGWARNING)
+                play_item = xbmcgui.ListItem(path=streamUrl)
+                xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
+        except ImportError:
+            # Fallback if inputstreamhelper is not available
+            xbmc.log("plugin.video.3cat - UI - inputstreamhelper not available, trying direct play", level=xbmc.LOGWARNING)
+            play_item = xbmcgui.ListItem(path=streamUrl)
+            xbmcplugin.setResolvedUrl(handle=self.addon_handle, succeeded=True, listitem=play_item)
+    
+    def extract_license_url_from_mpd(self, mpd_content):
+        """Try to extract license URL from MPD content if present"""
+        try:
+            import re
+            # Look for license URL in the MPD
+            license_url_match = re.search(r'licenseUrl="([^"]+)"', mpd_content)
+            if license_url_match:
+                return license_url_match.group(1)
+        except:
+            pass
+        return None
