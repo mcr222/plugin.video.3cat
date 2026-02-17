@@ -20,6 +20,8 @@ from resources.lib.utils.Utils import *
 
 
 class TV3cat(object):
+    ITEMS_PAGINA = 18
+
     def __init__(self, addon_path, addon):
         xbmc.log("plugin.video.3cat classe TV3cat - init() ")
         self.strs = TV3Strings(addon)
@@ -60,13 +62,6 @@ class TV3cat(object):
             return []
         # Extract the required information
         return data['props']['pageProps']['layout']['structure'][4]['children'][0]['finalProps']['items']
-
-    def getProgramaId(self, titolPrograma):
-        data = self.getJsonDataNextData(Urls.url_base + titolPrograma)
-        if not data:
-            return []
-
-        return data['props']['pageProps']['layout']['structure'][3]['children'][0]['finalProps']['programaId']
 
     # mode = coleccions
     def listProgrames(self, nomCategoria):
@@ -122,46 +117,78 @@ class TV3cat(object):
 
         return [tv3Directe, sx3Directe, c324Directe, sps3Directe, c33Directe]
 
-
-    def getProgramaData(self, programaId):
-        apiUrl = ("https://api.3cat.cat/videos?version=2.0&_format=json&items_pagina=1000&capitol=1|&tipus_contingut=PPD&ordre=capitol&idioma=PU_CATALA&programatv_id={}&perfil=pc"
-                  .format(programaId))
-
-        with urllib.request.urlopen(apiUrl) as response:
-            data = response.read()
-            json_data = json.loads(data)
-            return json_data['resposta']['items']['item']
-
     #mode getTemporades
     def getListTemporades(self, programaTitol):
         xbmc.log("plugin.video.3cat llista temporades " + programaTitol)
         lFolderVideos = []
-        programaId = self.getProgramaId(programaTitol)
-        items = self.getProgramaData(programaId)
 
-        # Set to store unique temporades
-        unique_temporades = set()
+        data = self.getJsonDataNextData(Urls.url_capitols.format(programaTitol))
+        if not data:
+            return []
 
-        # Count items without temporades
-        sense_temporada_count = 0
+        # Look for the seasons filer
+        try:
+            temporada_filter = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['isTemporades']
 
-        for item in items:
-            if item.get('temporades'):
-                # Only consider the first temporada
-                first_temporada = item['temporades'][0]['desc']
-                unique_temporades.add(first_temporada)
-            else:
-                sense_temporada_count += 1
+            if not temporada_filter:
+                return []
+        except (KeyError, IndexError):
+            return []
 
-        # Add "Sense Temporada" if there are items without temporades
-        if sense_temporada_count > 0:
-            unique_temporades.add("Sense Temporada")
+        temporada_value = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['temporada']
+        num_temporades = int(temporada_value.replace('PUTEMP_', ''))
 
-        for temporada in unique_temporades:
-            foldVideo = FolderVideo(temporada, str(programaId) + "_" + str(temporada), 'getlistvideos', '', '')
+        for i in range(1, num_temporades + 1):
+            temporada = f"{self.strs.get('temporada').decode('utf-8')} {i}"
+            foldVideo = FolderVideo(temporada, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA) + "_" + str(i), 'getlistvideos', '', '')
             lFolderVideos.append(foldVideo)
 
         return lFolderVideos
+
+    def getProgramaId(self, titolPrograma):
+        data = self.getJsonDataNextData(Urls.url_base + titolPrograma)
+        if not data:
+            return []
+
+        return data['props']['pageProps']['layout']['structure'][3]['children'][0]['finalProps']['programaId']
+
+    def getProgramaData(self, programaId, pagina, itemsPagina, temporada):
+        if temporada:
+            apiUrl = Urls.url_api_videos_temporada.format( programaId, pagina, itemsPagina, temporada)
+        else:
+            apiUrl = Urls.url_api_videos.format(programaId, pagina, itemsPagina)
+
+        with urllib.request.urlopen(apiUrl) as response:
+            data = response.read()
+            json_data = json.loads(data)
+            return [json_data['resposta']['items']['item'], json_data['resposta']['paginacio']]
+
+    # mode = getlistvideos
+    def getListVideos(self, url):
+        xbmc.log("plugin.video.3cat - get list videos " + str(url))
+        url_parts = url.split('_')
+        programaTitol = url_parts[0]
+        pagina = url_parts[1] if len(url_parts) > 1 else 1
+        itemsPagina = url_parts[2] if len(url_parts) > 2 else self.ITEMS_PAGINA
+        temporada = url_parts[3] if len(url_parts) > 3 else None
+        lVideos = []
+
+        programaId = self.getProgramaId(programaTitol)
+        (items, paginacio) = self.getProgramaData(programaId, pagina, itemsPagina, temporada)
+
+        for item in items:
+            img = self.extractImageIfAvailable(item, "KEYVIDEO")
+            video = Video(item['titol'], img, img, item.get('entradeta'), item['id'], item['durada'])
+            lVideos.append(video)
+
+        if int(pagina) < int(paginacio['total_pagines']):
+            pagSeguent = int(pagina) + 1
+            foldVideo = FolderVideo(f"{self.strs.get('seguent').decode('utf-8')}: {pagSeguent}",
+                                    str(programaTitol) + "_" + str(pagSeguent) + "_" + str(itemsPagina)
+                                    + ("_" + str(temporada) if temporada else ""), 'getlistvideos','', '')
+            lVideos.append(foldVideo)
+
+        return lVideos
 
     def extractImageIfAvailable(self, item, keyimatge):
         # Extract image links if available
@@ -170,34 +197,6 @@ class TV3cat(object):
                 if 'text' in image and image['text'].startswith('http') \
                         and image['rel_name'] == keyimatge:
                     return image['text']
-
-    # mode = getlistvideos
-    def getListVideos(self, url):
-        xbmc.log("plugin.video.3cat - get list videos " + str(url))
-        (programaId, target_temporada) = url.split('_')
-        lVideos = []
-        matching_items = []
-
-        for item in self.getProgramaData(programaId):
-            if item.get('temporades'):
-                # Only consider the first temporada
-                first_temporada = item['temporades'][0]['desc']
-                if first_temporada == target_temporada:
-                    matching_items.append(item)
-            elif target_temporada == "Sense Temporada":
-                matching_items.append(item)
-
-        # Display results
-        if matching_items:
-            print(f"Items matching temporada '{target_temporada}':")
-            for item in matching_items:
-                img = self.extractImageIfAvailable(item, "KEYVIDEO")
-                video = Video(item['titol'], img, img, item.get('entradeta'), item['id'], item['durada'])
-                lVideos.append(video)
-        else:
-            print(f"No items found for temporada '{target_temporada}'")
-
-        return lVideos
 
     #mode = cercar
     def search(self):
