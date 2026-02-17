@@ -13,6 +13,8 @@ import xbmc
 import xbmcvfs
 import urllib.parse
 
+from resources.lib.video.FolderVideo import FolderVideo
+
 PROTOCOL = 'mpd'
 DRM = 'com.widevine.alpha'
 # The generic license URL was causing issues on some devices
@@ -79,7 +81,6 @@ class UI(object):
             else:
                 xbmc.log("plugin.video.3cat - UI.run() cercar - No s'ha trobat cap video")
 
-
         elif mode[0] == 'getlistvideos':
             lVideos = self.tv3.getListVideos(url[0])
             self.listVideos(lVideos)
@@ -92,7 +93,11 @@ class UI(object):
         elif mode[0] == 'getTemporades':
             xbmc.log("plugin.video.3cat - Temporades")
             lFolder = self.tv3.getListTemporades(url[0])
-            self.listFolder(lFolder)
+
+            if len(lFolder) > 0:
+                self.listFolder(lFolder)
+            else:
+                self.run(['getlistvideos'], url)
 
         elif mode[0] == 'coleccions':
             xbmc.log("plugin.video.3cat - Coleccions")
@@ -124,6 +129,19 @@ class UI(object):
         xbmc.log("plugin.video.3cat - UI - listVideos - Numero videos: " + str(len(lVideos)))
 
         for video in lVideos:
+            # If this is a folder item (e.g. for pagination)
+            if isinstance(video, FolderVideo):
+                mode = video.mode
+                name = video.name
+                url = video.url
+
+                urlPlugin = buildUrl({'mode': mode, 'url': url}, self.base_url)
+                liz = xbmcgui.ListItem(name)
+                liz.setInfo(type="Video", infoLabels={"title": name})
+
+                xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=urlPlugin, listitem=liz, isFolder=True)
+                continue
+
             # Create a list item with a text label
             list_item = xbmcgui.ListItem(label=video.title)
             # Set graphics (thumbnail, fanart, banner, poster, landscape etc.) for the list item.
@@ -148,7 +166,9 @@ class UI(object):
             urlPlugin = buildUrl({'mode': 'playVideo', 'url': url}, self.base_url)
 
             xbmcplugin.addDirectoryItem(self.addon_handle, urlPlugin, list_item, is_folder)
-            # Add sort methods for the virtual folder items
+
+        # Add sort methods for the virtual folder items
+        xbmcplugin.addSortMethod(self.addon_handle, xbmcplugin.SORT_METHOD_UNSORTED)
         xbmcplugin.addSortMethod(self.addon_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
         xbmcplugin.addSortMethod(self.addon_handle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
         # Finish creating a virtual folder.

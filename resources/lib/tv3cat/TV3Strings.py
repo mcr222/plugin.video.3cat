@@ -30,7 +30,8 @@ class TV3Strings(object):
             'tv3_int': 30024,
             'canal324_int': 30025,
             'c33super3_int': 30026,
-            'esport3_int': 30027
+            'esport3_int': 30027,
+            'temporada': 30028
         }
 
     def get(self, string):

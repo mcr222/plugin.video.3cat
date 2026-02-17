@@ -123,3 +123,7 @@ msgstr "SX3 (Emissió internacional)"
 msgctxt "#30027"
 msgid "Esport 3 (International broadcast)"
 msgstr "Esport 3 (Emissió internacional)"
+
+msgctxt "#30028"
+msgid "Season"
+msgstr "Temporada"
