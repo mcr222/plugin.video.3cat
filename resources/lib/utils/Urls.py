@@ -2,6 +2,8 @@
 
 url_base = 'https://www.3cat.cat/3cat/'
 url_coleccions = 'https://www.3cat.cat/3cat/tot-cataleg/tot/'
+url_pellicules = 'https://www.3cat.cat/3cat/pellicules/'
+url_pellicules_cataleg = 'https://www.3cat.cat/3cat/tot-cataleg/pellicules/'
 url_capitols = 'https://www.3cat.cat/{}/capitols/'
 url_mesvist = 'http://www.ccma.cat/tv3/alacarta/mes-vist/'
 
