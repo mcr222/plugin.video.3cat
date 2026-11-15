@@ -1,9 +1,8 @@
-from builtins import object
 
 import xbmc
 
 
-class Video(object):
+class Video:
 
     def __init__(self, title, iconImage, thumbnailImage, information, url, durada):
         xbmc.log("plugin.video.3cat - video " + str(title) + ", " + str(url))

@@ -127,3 +127,19 @@ msgstr "Esport 3 (Utland)"
 msgctxt "#30028"
 msgid "Season"
 msgstr "Sesong"
+
+msgctxt "#30029"
+msgid "Films"
+msgstr "Filmer"
+
+msgctxt "#30030"
+msgid "New releases"
+msgstr "Nyheter"
+
+msgctxt "#30031"
+msgid "Full catalogue"
+msgstr "Hele katalogen"
+
+msgctxt "#30032"
+msgid "Categories"
+msgstr "Kategorier"

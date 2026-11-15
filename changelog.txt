@@ -1,4 +1,7 @@
-﻿v1.2.2
+﻿v1.3.0
+- Added Films section (new releases, full catalogue, categories)
+
+v1.2.2
 - Improved video playback compatibility across different devices
 - Added intelligent DRM detection to only use DRM when needed
 - Added better support for HLS (.m3u8) streams

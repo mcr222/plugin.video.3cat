@@ -1,7 +1,6 @@
-from builtins import object
 import xbmc
 
-class FolderVideo(object):
+class FolderVideo:
     def __init__(self, name, url, mode, iconImage ="", thumbnaiImage=""):
         """
 

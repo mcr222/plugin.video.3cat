@@ -127,3 +127,19 @@ msgstr "Esport 3 (International)"
 msgctxt "#30028"
 msgid "Season"
 msgstr "Staffel"
+
+msgctxt "#30029"
+msgid "Films"
+msgstr "Filme"
+
+msgctxt "#30030"
+msgid "New releases"
+msgstr "Neuheiten"
+
+msgctxt "#30031"
+msgid "Full catalogue"
+msgstr "Gesamtkatalog"
+
+msgctxt "#30032"
+msgid "Categories"
+msgstr "Kategorien"

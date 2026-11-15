@@ -1,6 +1,4 @@
-from __future__ import division
 
-from builtins import object
 from collections import defaultdict
 
 from bs4 import BeautifulSoup
@@ -19,7 +17,7 @@ from resources.lib.tv3cat.TV3Strings import TV3Strings
 from resources.lib.utils.Utils import *
 
 
-class TV3cat(object):
+class TV3cat:
     ITEMS_PAGINA = 18
 
     def __init__(self, addon_path, addon):
@@ -194,7 +192,7 @@ class TV3cat(object):
         num_temporades = int(temporada_value.replace('PUTEMP_', ''))
 
         for i in range(1, num_temporades + 1):
-            temporada = f"{self.strs.get('temporada').decode('utf-8')} {i}"
+            temporada = f"{self.strs.get('temporada')} {i}"
             foldVideo = FolderVideo(temporada, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA) + "_" + str(i), 'getlistvideos', '', '')
             lFolderVideos.append(foldVideo)
 
@@ -238,7 +236,7 @@ class TV3cat(object):
 
         if int(pagina) < int(paginacio['total_pagines']):
             pagSeguent = int(pagina) + 1
-            foldVideo = FolderVideo(f"{self.strs.get('seguent').decode('utf-8')}: {pagSeguent}",
+            foldVideo = FolderVideo(f"{self.strs.get('seguent')}: {pagSeguent}",
                                     str(programaTitol) + "_" + str(pagSeguent) + "_" + str(itemsPagina)
                                     + ("_" + str(temporada) if temporada else ""), 'getlistvideos','', '')
             lVideos.append(foldVideo)

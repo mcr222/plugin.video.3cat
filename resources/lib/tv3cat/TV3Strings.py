@@ -1,5 +1,4 @@
-from builtins import object
-class TV3Strings(object):
+class TV3Strings:
 
     def __init__(self, addon):
         self.addon = addon
@@ -31,11 +30,15 @@ class TV3Strings(object):
             'canal324_int': 30025,
             'c33super3_int': 30026,
             'esport3_int': 30027,
-            'temporada': 30028
+            'temporada': 30028,
+            'pellicules': 30029,
+            'novetats': 30030,
+            'cataleg_complet': 30031,
+            'categories': 30032
         }
 
     def get(self, string):
         code = self.strs[string]
-        st = self.addon.getLocalizedString(code).encode("utf-8")
+        st = self.addon.getLocalizedString(code)
 
         return st

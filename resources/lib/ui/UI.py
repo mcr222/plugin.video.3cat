@@ -1,6 +1,4 @@
 import json
-from builtins import str
-from builtins import object
 
 import urllib.request, urllib.parse, urllib.error
 
@@ -22,7 +20,7 @@ DRM = 'com.widevine.alpha'
 LICENSE_URL = ''
 
 
-class UI(object):
+class UI:
 
     def __init__(self, base_url, addon_handle, args):
         xbmc.log("plugin.video.3cat classe UI - start init() ")
@@ -51,9 +49,9 @@ class UI(object):
 
         elif mode[0] == 'pellicules':
             self.listFolder([
-                FolderVideo("Novetats", "novetats", "pellicules_categoria"),
-                FolderVideo("Catàleg complet", "cataleg", "pellicules_categoria"),
-                FolderVideo("Categories", "", "pellicules_categories")
+                FolderVideo(self.tv3.strs.get("novetats"), "novetats", "pellicules_categoria"),
+                FolderVideo(self.tv3.strs.get("cataleg_complet"), "cataleg", "pellicules_categoria"),
+                FolderVideo(self.tv3.strs.get("categories"), "", "pellicules_categories")
             ])
 
         elif mode[0] == 'pellicules_categories':
