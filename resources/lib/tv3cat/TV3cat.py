@@ -86,6 +86,61 @@ class TV3cat(object):
         return lFolderVideos
 
 
+    def getMovieCategories(self):
+        xbmc.log("plugin.video.3cat - get movie categories")
+        html = getHtml(Urls.url_pellicules)
+        if not html:
+            return []
+        soup = BeautifulSoup(html, "html.parser")
+        folders = []
+        seen = set()
+        for anchor in soup.find_all('a', href=True):
+            href = anchor.get('href', '')
+            label = anchor.get_text(" ", strip=True).lstrip("+").strip()
+            if '/3cat/coleccio/' not in href or not label or label.lower() in seen:
+                continue
+            if href.startswith('/'):
+                href = 'https://www.3cat.cat' + href
+            folders.append(FolderVideo(label, href, 'pellicules_categoria'))
+            seen.add(label.lower())
+        return folders
+
+    def getMovies(self, section):
+        xbmc.log("plugin.video.3cat - get movies " + str(section))
+        if section == 'novetats':
+            page_url = Urls.url_pellicules_novetats
+        elif section == 'cataleg':
+            page_url = Urls.url_pellicules_cataleg
+        else:
+            page_url = section
+        data = self.getJsonDataNextData(page_url)
+        if not data:
+            return []
+
+        videos = []
+        seen = set()
+        def walk(value):
+            if isinstance(value, dict):
+                title = value.get('titol') or value.get('title')
+                video_id = value.get('id')
+                if title and video_id and str(video_id) not in seen:
+                    # Ignore non-video containers; movie records expose image or duration metadata.
+                    if any(k in value for k in ('durada', 'entradeta', 'imatges', 'descripcio')):
+                        seen.add(str(video_id))
+                        image = self.extractImageIfAvailable(value, 'IMG_POSTER')
+                        if not image:
+                            image = self.extractImageIfAvailable(value, 'KEYVIDEO')
+                        description = value.get('entradeta') or value.get('descripcio') or value.get('sinopsi') or ''
+                        videos.append(Video(title, image or '', image or '', description, video_id,
+                                            value.get('durada') or ''))
+                for child in value.values():
+                    walk(child)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child)
+        walk(data)
+        return videos
+
     # mode = coleccions
     def listColeccions(self):
         xbmc.log("plugin.video.3cat - listColeccions")

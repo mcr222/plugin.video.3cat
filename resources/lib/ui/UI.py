@@ -49,6 +49,19 @@ class UI(object):
             else:
                 xbmc.log("plugin.video.3cat - UI.run() Home - No existeixen elements")
 
+        elif mode[0] == 'pellicules':
+            self.listFolder([
+                FolderVideo("Novetats", "novetats", "pellicules_categoria"),
+                FolderVideo("Catàleg complet", "cataleg", "pellicules_categoria"),
+                FolderVideo("Categories", "", "pellicules_categories")
+            ])
+
+        elif mode[0] == 'pellicules_categories':
+            self.listFolder(self.tv3.getMovieCategories())
+
+        elif mode[0] == 'pellicules_categoria':
+            self.listVideos(self.tv3.getMovies(url[0]))
+
         elif mode[0] == 'programes':
 
             lFolder = self.tv3.dirSections()
