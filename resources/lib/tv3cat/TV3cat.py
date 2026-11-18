@@ -199,17 +199,17 @@ class TV3cat:
         return lFolderVideos
 
     def getProgramaId(self, titolPrograma):
-        data = self.getJsonDataNextData(Urls.url_base + titolPrograma)
+        # Fem servir la mateixa pàgina /capitols/ que getListTemporades(),
+        # on ja hem verificat la ruta fixa de les dades de temporada.
+        data = self.getJsonDataNextData(Urls.url_capitols.format(titolPrograma))
         if not data:
             xbmc.log("plugin.video.3cat - no s'han pogut obtenir les dades del programa " + str(titolPrograma), xbmc.LOGERROR)
             return None
 
-        # El programaId es troba al mateix bloc finalProps que les dades
-        # de temporades: structure[3].children[0].children[0].
         try:
             programa_id = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['programaId']
         except (KeyError, IndexError, TypeError):
-            xbmc.log("plugin.video.3cat - no s'ha trobat programaId a la posicio esperada per al programa " + str(titolPrograma), xbmc.LOGERROR)
+            xbmc.log("plugin.video.3cat - no s'ha trobat programaId a la ruta de capitols per al programa " + str(titolPrograma), xbmc.LOGERROR)
             return None
 
         if programa_id in (None, ''):
