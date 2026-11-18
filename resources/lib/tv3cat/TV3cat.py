@@ -201,9 +201,33 @@ class TV3cat:
     def getProgramaId(self, titolPrograma):
         data = self.getJsonDataNextData(Urls.url_base + titolPrograma)
         if not data:
-            return []
+            xbmc.log("plugin.video.3cat - no s'han pogut obtenir les dades del programa " + str(titolPrograma), xbmc.LOGERROR)
+            return None
 
-        return data['props']['pageProps']['layout']['structure'][3]['children'][0]['finalProps']['programaId']
+        # L'estructura de __NEXT_DATA__ de 3Cat canvia sovint.
+        # Cerquem programaId recursivament en lloc de dependre d'índexs fixos.
+        def find_programa_id(value):
+            if isinstance(value, dict):
+                if value.get('programaId') not in (None, ''):
+                    return value['programaId']
+                for child in value.values():
+                    result = find_programa_id(child)
+                    if result not in (None, ''):
+                        return result
+            elif isinstance(value, list):
+                for child in value:
+                    result = find_programa_id(child)
+                    if result not in (None, ''):
+                        return result
+            return None
+
+        programa_id = find_programa_id(data)
+        if programa_id in (None, ''):
+            xbmc.log("plugin.video.3cat - no s'ha trobat programaId a la pàgina " + str(titolPrograma), xbmc.LOGERROR)
+            return None
+
+        xbmc.log("plugin.video.3cat - programaId trobat: " + str(programa_id))
+        return programa_id
 
     def getProgramaData(self, programaId, pagina, itemsPagina, temporada):
         if temporada:
@@ -227,6 +251,9 @@ class TV3cat:
         lVideos = []
 
         programaId = self.getProgramaId(programaTitol)
+        if programaId in (None, ''):
+            return lVideos
+
         (items, paginacio) = self.getProgramaData(programaId, pagina, itemsPagina, temporada)
 
         for item in items:
