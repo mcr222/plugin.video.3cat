@@ -49,6 +49,18 @@ class TV3cat:
                 # Extract the data from the JSON content
                 data = json.loads(json_content)
 
+                # Diagnòstic temporal: comparar l'estructura de /capitols/ de
+                # programes sense temporades amb la dels programes amb temporades.
+                if '/30-minuts/' in url:
+                    try:
+                        structure = data['props']['pageProps']['layout']['structure']
+                        xbmc.log("plugin.video.3cat DEBUG 30-minuts structure: " +
+                                 json.dumps(structure, ensure_ascii=False)[:12000], xbmc.LOGINFO)
+                    except (KeyError, TypeError):
+                        xbmc.log("plugin.video.3cat DEBUG 30-minuts pageProps: " +
+                                 json.dumps(data.get('props', {}).get('pageProps', {}), ensure_ascii=False)[:12000],
+                                 xbmc.LOGINFO)
+
                 # Extract the required information
                 return data
 
