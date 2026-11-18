@@ -179,16 +179,24 @@ class TV3cat:
         if not data:
             return []
 
-        # Look for the seasons filer
+        # La pàgina /capitols/ pot correspondre a:
+        # - un programa amb temporades, que mostra el selector de temporades;
+        # - un programa sense temporades, que ja mostra directament els capítols.
         try:
-            temporada_filter = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['isTemporades']
-
-            if not temporada_filter:
-                return []
-        except (KeyError, IndexError):
+            final_props = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']
+            temporada_filter = final_props.get('isTemporades', False)
+        except (KeyError, IndexError, TypeError):
+            xbmc.log("plugin.video.3cat - no s'ha pogut llegir la configuracio de temporades per a " + str(programaTitol), xbmc.LOGERROR)
             return []
 
-        temporada_value = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['temporada']
+        if not temporada_filter:
+            # Sense temporada: obrir directament la llista general de capítols.
+            return [FolderVideo(programaTitol, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA), 'getlistvideos', '', '')]
+
+        temporada_value = final_props.get('temporada')
+        if not temporada_value:
+            xbmc.log("plugin.video.3cat - falta el valor de temporada per a " + str(programaTitol), xbmc.LOGERROR)
+            return []
         num_temporades = int(temporada_value.replace('PUTEMP_', ''))
 
         for i in range(1, num_temporades + 1):
