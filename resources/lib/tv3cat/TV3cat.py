@@ -221,33 +221,8 @@ class TV3cat:
         except (KeyError, IndexError, TypeError):
             pass
 
-        # Els programes sense temporades poden tenir una estructura diferent
-        # a la pàgina /capitols/. En aquest cas busquem programaId dins del
-        # JSON de la pàgina, sense alterar la ruta fixa quan aquesta existeix.
-        if programa_id in (None, ''):
-            def find_programa_id(value):
-                if isinstance(value, dict):
-                    if value.get('programaId') not in (None, ''):
-                        return value['programaId']
-                    for child in value.values():
-                        found = find_programa_id(child)
-                        if found not in (None, ''):
-                            return found
-                elif isinstance(value, list):
-                    for child in value:
-                        found = find_programa_id(child)
-                        if found not in (None, ''):
-                            return found
-                return None
-
-            programa_id = find_programa_id(data)
-
         if programa_id in (None, ''):
             xbmc.log("plugin.video.3cat - no s'ha trobat programaId a les dades de capitols per al programa " + str(titolPrograma), xbmc.LOGERROR)
-            return None
-
-        if programa_id in (None, ''):
-            xbmc.log("plugin.video.3cat - programaId buit per al programa " + str(titolPrograma), xbmc.LOGERROR)
             return None
 
         xbmc.log("plugin.video.3cat - programaId trobat: " + str(programa_id))
