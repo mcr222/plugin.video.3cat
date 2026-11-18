@@ -197,9 +197,9 @@ class TV3cat:
             try:
                 menu_props = structure[1]['finalProps']
                 if menu_props.get('seccio') == 'capitols' and int(menu_props.get('numCapitols', 0)) > 0:
-                    # Mostrar directament els episodis, sense una carpeta intermèdia
-                    # amb el nom del programa.
-                    return self.getListVideos(str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA))
+                    # Retornar una llista de carpetes buida fa que UI.run()
+                    # executi directament getListVideos() per aquest programa.
+                    return []
             except (KeyError, IndexError, TypeError, ValueError):
                 pass
 
