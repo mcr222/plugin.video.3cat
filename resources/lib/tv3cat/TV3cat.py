@@ -50,18 +50,6 @@ class TV3cat:
                 # Extract the data from the JSON content
                 data = json.loads(json_content)
 
-                # Diagnòstic temporal: comparar l'estructura de /capitols/ de
-                # programes sense temporades amb la dels programes amb temporades.
-                if '/30-minuts/' in url:
-                    try:
-                        structure = data['props']['pageProps']['layout']['structure']
-                        xbmc.log("plugin.video.3cat DEBUG 30-minuts structure: " +
-                                 json.dumps(structure, ensure_ascii=False)[:12000], xbmc.LOGINFO)
-                    except (KeyError, TypeError):
-                        xbmc.log("plugin.video.3cat DEBUG 30-minuts pageProps: " +
-                                 json.dumps(data.get('props', {}).get('pageProps', {}), ensure_ascii=False)[:12000],
-                                 xbmc.LOGINFO)
-
                 # Extract the required information
                 return data
 
@@ -209,7 +197,9 @@ class TV3cat:
             try:
                 menu_props = structure[1]['finalProps']
                 if menu_props.get('seccio') == 'capitols' and int(menu_props.get('numCapitols', 0)) > 0:
-                    return [FolderVideo(programaTitol, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA), 'getlistvideos', '', '')]
+                    # Mostrar directament els episodis, sense una carpeta intermèdia
+                    # amb el nom del programa.
+                    return self.getListVideos(str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA))
             except (KeyError, IndexError, TypeError, ValueError):
                 pass
 
@@ -250,7 +240,7 @@ class TV3cat:
         if programa_id in (None, ''):
             try:
                 menu_api_url = structure[1]['finalProps']['urlApi']
-                match = re.search(r'/programestv/(\\d+)/', menu_api_url)
+                match = re.search(r'/programestv/(\d+)/', menu_api_url)
                 if match:
                     programa_id = match.group(1)
             except (KeyError, IndexError, TypeError):
