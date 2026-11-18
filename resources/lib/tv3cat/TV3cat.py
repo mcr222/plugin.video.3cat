@@ -1,5 +1,6 @@
 
 from collections import defaultdict
+import re
 
 from bs4 import BeautifulSoup
 
@@ -191,19 +192,29 @@ class TV3cat:
         if not data:
             return []
 
-        # La pàgina /capitols/ pot correspondre a:
-        # - un programa amb temporades, que mostra el selector de temporades;
-        # - un programa sense temporades, que ja mostra directament els capítols.
+        structure = data['props']['pageProps']['layout']['structure']
+
+        # Programes amb temporades: selector a la posició fixa ja coneguda.
         try:
-            final_props = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']
+            final_props = structure[3]['children'][0]['children'][0]['finalProps']
             temporada_filter = final_props.get('isTemporades', False)
         except (KeyError, IndexError, TypeError):
-            xbmc.log("plugin.video.3cat - no s'ha pogut llegir la configuracio de temporades per a " + str(programaTitol), xbmc.LOGERROR)
-            return []
+            final_props = None
+            temporada_filter = False
 
         if not temporada_filter:
-            # Sense temporada: obrir directament la llista general de capítols.
-            return [FolderVideo(programaTitol, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA), 'getlistvideos', '', '')]
+            # Programes sense temporades (p. ex. 30 minuts): la pàgina
+            # identifica el programa al mòdul Menu i mostra els capítols
+            # directament a la pàgina.
+            try:
+                menu_props = structure[1]['finalProps']
+                if menu_props.get('seccio') == 'capitols' and int(menu_props.get('numCapitols', 0)) > 0:
+                    return [FolderVideo(programaTitol, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA), 'getlistvideos', '', '')]
+            except (KeyError, IndexError, TypeError, ValueError):
+                pass
+
+            xbmc.log("plugin.video.3cat - no s'ha trobat el selector de temporades ni el menu de capitols per a " + str(programaTitol), xbmc.LOGERROR)
+            return []
 
         temporada_value = final_props.get('temporada')
         if not temporada_value:
@@ -226,12 +237,24 @@ class TV3cat:
             xbmc.log("plugin.video.3cat - no s'han pogut obtenir les dades del programa " + str(titolPrograma), xbmc.LOGERROR)
             return None
 
-        # Ruta fixa utilitzada per als programes amb temporades.
+        # Programes amb temporades: programaId al mòdul de temporades.
         programa_id = None
+        structure = data['props']['pageProps']['layout']['structure']
         try:
-            programa_id = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['programaId']
+            programa_id = structure[3]['children'][0]['children'][0]['finalProps']['programaId']
         except (KeyError, IndexError, TypeError):
             pass
+
+        # Programes sense temporades: l'ID és a l'URL de l'API del mòdul
+        # Menu (p. ex. /programestv/120086514/), a la posició fixa [1].
+        if programa_id in (None, ''):
+            try:
+                menu_api_url = structure[1]['finalProps']['urlApi']
+                match = re.search(r'/programestv/(\\d+)/', menu_api_url)
+                if match:
+                    programa_id = match.group(1)
+            except (KeyError, IndexError, TypeError):
+                pass
 
         if programa_id in (None, ''):
             xbmc.log("plugin.video.3cat - no s'ha trobat programaId a les dades de capitols per al programa " + str(titolPrograma), xbmc.LOGERROR)
