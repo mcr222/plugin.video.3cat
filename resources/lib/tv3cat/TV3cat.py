@@ -26,6 +26,11 @@ class TV3cat:
         self.strs = TV3Strings(addon)
         self.images = Images(addon_path)
         self.addon_path = addon_path
+        try:
+            configured_items = int(addon.getSetting('items_per_page'))
+            self.items_pagina = configured_items if configured_items in (20, 50, 100, 200, 400, 500, 1000) else self.ITEMS_PAGINA
+        except (TypeError, ValueError):
+            self.items_pagina = self.ITEMS_PAGINA
 
     # mode = None
     def listHome(self):
@@ -214,7 +219,7 @@ class TV3cat:
 
         for i in range(1, num_temporades + 1):
             temporada = f"{self.strs.get('temporada')} {i}"
-            foldVideo = FolderVideo(temporada, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA) + "_" + str(i), 'getlistvideos', '', '')
+            foldVideo = FolderVideo(temporada, str(programaTitol) + "_1_" + str(self.items_pagina) + "_" + str(i), 'getlistvideos', '', '')
             lFolderVideos.append(foldVideo)
 
         return lFolderVideos
@@ -270,7 +275,7 @@ class TV3cat:
         url_parts = url.split('_')
         programaTitol = url_parts[0]
         pagina = url_parts[1] if len(url_parts) > 1 else 1
-        itemsPagina = url_parts[2] if len(url_parts) > 2 else self.ITEMS_PAGINA
+        itemsPagina = url_parts[2] if len(url_parts) > 2 else self.items_pagina
         temporada = url_parts[3] if len(url_parts) > 3 else None
         lVideos = []
 

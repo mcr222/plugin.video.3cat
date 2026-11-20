@@ -143,3 +143,11 @@ msgstr "Catàleg complet"
 msgctxt "#30032"
 msgid "Categories"
 msgstr "Categories"
+
+msgctxt "#30033"
+msgid "General"
+msgstr "General"
+
+msgctxt "#30034"
+msgid "Items per page"
+msgstr "Elements per pàgina"
