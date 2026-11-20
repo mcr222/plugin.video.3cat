@@ -19,7 +19,7 @@ from resources.lib.utils.Utils import *
 
 
 class TV3cat:
-    ITEMS_PAGINA = 18
+    ITEMS_PAGINA = 200
 
     def __init__(self, addon_path, addon):
         xbmc.log("plugin.video.3cat classe TV3cat - init() ")
