@@ -28,7 +28,7 @@ class TV3cat:
         self.addon_path = addon_path
         try:
             configured_items = int(addon.getSetting('items_per_page'))
-            self.items_pagina = configured_items if configured_items in (20, 50, 100, 200, 400, 500, 1000) else self.ITEMS_PAGINA
+            self.items_pagina = configured_items if configured_items in (18, 50, 100, 200, 400, 500, 1000) else self.ITEMS_PAGINA
         except (TypeError, ValueError):
             self.items_pagina = self.ITEMS_PAGINA
 
