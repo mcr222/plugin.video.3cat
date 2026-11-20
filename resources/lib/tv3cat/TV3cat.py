@@ -1,5 +1,6 @@
 
 from collections import defaultdict
+import re
 
 from bs4 import BeautifulSoup
 
@@ -18,13 +19,18 @@ from resources.lib.utils.Utils import *
 
 
 class TV3cat:
-    ITEMS_PAGINA = 18
+    ITEMS_PAGINA = 200
 
     def __init__(self, addon_path, addon):
         xbmc.log("plugin.video.3cat classe TV3cat - init() ")
         self.strs = TV3Strings(addon)
         self.images = Images(addon_path)
         self.addon_path = addon_path
+        try:
+            configured_items = int(addon.getSetting('items_per_page'))
+            self.items_pagina = configured_items if configured_items in (18, 50, 100, 200, 400, 500, 1000) else self.ITEMS_PAGINA
+        except (TypeError, ValueError):
+            self.items_pagina = self.ITEMS_PAGINA
 
     # mode = None
     def listHome(self):
@@ -179,31 +185,78 @@ class TV3cat:
         if not data:
             return []
 
-        # Look for the seasons filer
-        try:
-            temporada_filter = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['isTemporades']
+        structure = data['props']['pageProps']['layout']['structure']
 
-            if not temporada_filter:
-                return []
-        except (KeyError, IndexError):
+        # Programes amb temporades: selector a la posició fixa ja coneguda.
+        try:
+            final_props = structure[3]['children'][0]['children'][0]['finalProps']
+            temporada_filter = final_props.get('isTemporades', False)
+        except (KeyError, IndexError, TypeError):
+            final_props = None
+            temporada_filter = False
+
+        if not temporada_filter:
+            # Programes sense temporades (p. ex. 30 minuts): la pàgina
+            # identifica el programa al mòdul Menu i mostra els capítols
+            # directament a la pàgina.
+            try:
+                menu_props = structure[1]['finalProps']
+                if menu_props.get('seccio') == 'capitols' and int(menu_props.get('numCapitols', 0)) > 0:
+                    # Retornar una llista de carpetes buida fa que UI.run()
+                    # executi directament getListVideos() per aquest programa.
+                    return []
+            except (KeyError, IndexError, TypeError, ValueError):
+                pass
+
+            xbmc.log("plugin.video.3cat - no s'ha trobat el selector de temporades ni el menu de capitols per a " + str(programaTitol), xbmc.LOGERROR)
             return []
 
-        temporada_value = data['props']['pageProps']['layout']['structure'][3]['children'][0]['children'][0]['finalProps']['temporada']
+        temporada_value = final_props.get('temporada')
+        if not temporada_value:
+            xbmc.log("plugin.video.3cat - falta el valor de temporada per a " + str(programaTitol), xbmc.LOGERROR)
+            return []
         num_temporades = int(temporada_value.replace('PUTEMP_', ''))
 
         for i in range(1, num_temporades + 1):
             temporada = f"{self.strs.get('temporada')} {i}"
-            foldVideo = FolderVideo(temporada, str(programaTitol) + "_1_" + str(self.ITEMS_PAGINA) + "_" + str(i), 'getlistvideos', '', '')
+            foldVideo = FolderVideo(temporada, str(programaTitol) + "_1_" + str(self.items_pagina) + "_" + str(i), 'getlistvideos', '', '')
             lFolderVideos.append(foldVideo)
 
         return lFolderVideos
 
     def getProgramaId(self, titolPrograma):
-        data = self.getJsonDataNextData(Urls.url_base + titolPrograma)
+        # Fem servir la mateixa pàgina /capitols/ que getListTemporades(),
+        # on ja hem verificat la ruta fixa de les dades de temporada.
+        data = self.getJsonDataNextData(Urls.url_capitols.format(titolPrograma))
         if not data:
-            return []
+            xbmc.log("plugin.video.3cat - no s'han pogut obtenir les dades del programa " + str(titolPrograma), xbmc.LOGERROR)
+            return None
 
-        return data['props']['pageProps']['layout']['structure'][3]['children'][0]['finalProps']['programaId']
+        # Programes amb temporades: programaId al mòdul de temporades.
+        programa_id = None
+        structure = data['props']['pageProps']['layout']['structure']
+        try:
+            programa_id = structure[3]['children'][0]['children'][0]['finalProps']['programaId']
+        except (KeyError, IndexError, TypeError):
+            pass
+
+        # Programes sense temporades: l'ID és a l'URL de l'API del mòdul
+        # Menu (p. ex. /programestv/120086514/), a la posició fixa [1].
+        if programa_id in (None, ''):
+            try:
+                menu_api_url = structure[1]['finalProps']['urlApi']
+                match = re.search(r'/programestv/(\d+)/', menu_api_url)
+                if match:
+                    programa_id = match.group(1)
+            except (KeyError, IndexError, TypeError):
+                pass
+
+        if programa_id in (None, ''):
+            xbmc.log("plugin.video.3cat - no s'ha trobat programaId a les dades de capitols per al programa " + str(titolPrograma), xbmc.LOGERROR)
+            return None
+
+        xbmc.log("plugin.video.3cat - programaId trobat: " + str(programa_id))
+        return programa_id
 
     def getProgramaData(self, programaId, pagina, itemsPagina, temporada):
         if temporada:
@@ -222,11 +275,14 @@ class TV3cat:
         url_parts = url.split('_')
         programaTitol = url_parts[0]
         pagina = url_parts[1] if len(url_parts) > 1 else 1
-        itemsPagina = url_parts[2] if len(url_parts) > 2 else self.ITEMS_PAGINA
+        itemsPagina = url_parts[2] if len(url_parts) > 2 else self.items_pagina
         temporada = url_parts[3] if len(url_parts) > 3 else None
         lVideos = []
 
         programaId = self.getProgramaId(programaTitol)
+        if programaId in (None, ''):
+            return lVideos
+
         (items, paginacio) = self.getProgramaData(programaId, pagina, itemsPagina, temporada)
 
         for item in items:
